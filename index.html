@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyBuddy - Home</title>
+    <link rel="stylesheet" href="styles/styles.css">
+</head>
+<body onload="checkAuth(); loadSchools()">
+    
+    <body onload="checkAuth(); loadSchools()"></body>
+    <nav>
+        <div class="logo"><a href="index.html">StudyBuddy</a></div>
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <!-- Dynamic Auth Section -->
+            <li id="auth-link" class="auth-item">
+                <a href="accounts.html" class="auth-link">Sign In / Sign Up</a>
+            </li>
+            <li id="profile-section" class="profile-item" style="display: none;">
+                <div class="profile-info">
+                    <img id="profile-pic" class="profile-pic" alt="Profile Picture">
+                    <span id="username" class="username"></span>
+                </div>
+                <button onclick="logout()" class="logout-btn">Logout</button>
+            </li>
+        </ul>
+    </nav>
+
+
+    <div class="container">
+        <h1>Find Your School</h1>
+        <input type="text" id="school-search" placeholder="Search for your school...">
+        <button onclick="searchSchool()">Search</button>
+        <div id="school-list"></div>
+
+        <!-- Add School Button (Visible only to the creator) -->
+        <button id="add-school-btn" style="display: none;" onclick="showAddSchoolForm()">Add School</button>
+        <div id="add-school-form" style="display: none;">
+            <input type="text" id="school-name" placeholder="School Name">
+            <button onclick="addSchool()">Add</button>
+        </div>
+    </div>
+   
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="scripts/main.js"></script>
+</body>
+</html>

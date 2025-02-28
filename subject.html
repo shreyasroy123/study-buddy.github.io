@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyBuddy - Subjects</title>
+    <link rel="stylesheet" href="styles/styles.css">
+</head>
+<body onload="checkAuth(); loadSubjects()">
+    <nav>
+        <div class="logo"><a href="index.html">StudyBuddy</a></div>
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <!-- Dynamic Auth Section -->
+            <li id="auth-link" class="auth-item">
+                <a href="accounts.html" class="auth-link">Sign In</a>
+            </li>
+            <li id="profile-section" class="profile-item" style="display: none;">
+                <div class="profile-info">
+                    <img id="profile-pic" class="profile-pic" alt="Profile Picture">
+                    <span id="username" class="username"></span>
+                </div>
+                <button onclick="logout()" class="logout-btn">Logout</button>
+            </li>
+        </ul>
+    </nav>
+
+    <body onload="checkAuth(); loadMessages()"></body>
+    <div class="container">
+        <h1>Subjects</h1>
+        <div id="subject-list"></div>
+        <div class="creator-only" style="display: none;">
+            <input type="text" id="subject-name" placeholder="New Subject Name">
+            <button onclick="addSubject()">Add Subject</button>
+        </div>
+    </div>
+
+    <!-- Inside subject.html -->
+<div class="message-box">
+    <textarea id="message-input"></textarea>
+    <input type="file" id="note-file">
+    <button onclick="postMessage()">Send</button>
+  </div>
+  
+  <div id="messages-container">
+    <!-- Messages will be loaded here -->
+  </div>
+
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="scripts/main.js"></script>
+
+</body>
+</html>

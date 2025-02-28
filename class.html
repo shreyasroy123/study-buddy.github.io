@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyBuddy - Classes</title>
+    <link rel="stylesheet" href="styles/styles.css">
+</head>
+<body onload="checkAuth(); loadClasses()">
+    <nav>
+        <div class="logo"><a href="index.html">StudyBuddy</a></div>
+        <ul>
+            <li><a href="index.html">Home</a></li>
+            <!-- Dynamic Auth Section -->
+            <li id="auth-link" class="auth-item">
+                <a href="accounts.html" class="auth-link">Sign In</a>
+            </li>
+            <li id="profile-section" class="profile-item" style="display: none;">
+                <div class="profile-info">
+                    <img id="profile-pic" class="profile-pic" alt="Profile Picture">
+                    <span id="username" class="username"></span>
+                </div>
+                <button onclick="logout()" class="logout-btn">Logout</button>
+            </li>
+        </ul>
+    </nav>
+    
+    <body onload="checkAuth(); loadSubjects()"></body>
+    <div class="container">
+        <h1 id="school-name">Classes</h1>
+        <div id="class-list" class="list-container"></div>
+        
+        <!-- Add Class Form (visible only to creator) -->
+        <div id="add-class-form" class="creator-only" style="display: none;">
+            <input type="text" id="class-name" placeholder="Enter class name">
+            <button onclick="addClass()">Add Class</button>
+        </div>
+    </div>
+
+    <!-- Example for school.html -->
+<body onload="checkAuth(); loadClasses()">
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="scripts/main.js"></script>
+</body>
+</html>
