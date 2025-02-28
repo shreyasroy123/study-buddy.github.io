@@ -1,6 +1,6 @@
 // 1. INITIALIZE SUPABASE FIRST
 const supabaseUrl = 'https://wyyiifksxojppfqhpvgt.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5eWlpZmtzeG9qcHBmcWhwdmd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA2NTM2MzAsImV4cCI6MjA1NjIyOTYzMH0.fBljtE2zY64il7GIOoIqAmupfxXwPFjQRV42x7aZrWw';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5eWlpZmtzeG9qcHBmcWhwdmd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA2NTM2MzAsImV4cCI6MjA1NjIyOTYzMH0.fBljtE2zY64[...]
 // Fix for initialization error - use the global object
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
@@ -373,8 +373,9 @@ async function postMessage() {
         const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
         const filePath = `comments/${user.id}/${fileName}`;
         
+        // Changed from 'comment-attachments' to 'notes'
         const { error: uploadError } = await supabase.storage
-          .from('comment-attachments')
+          .from('notes')
           .upload(filePath, file, {
             cacheControl: '3600',
             upsert: true
@@ -382,9 +383,9 @@ async function postMessage() {
           
         if (uploadError) throw uploadError;
         
-        // Get the public URL
+        // Get the public URL - also changed to 'notes'
         const { data: { publicUrl } } = supabase.storage
-          .from('comment-attachments')
+          .from('notes')
           .getPublicUrl(filePath);
           
         attachmentUrl = publicUrl;
@@ -425,3 +426,5 @@ function toggleAuthForm(formType) {
     loginForm.style.display = 'none';
   }
 }
+
+// Call checkAuth()
