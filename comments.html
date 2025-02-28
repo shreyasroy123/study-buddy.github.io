@@ -3,17 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StudyBuddy - Subjects</title>
+    <title>StudyBuddy - Discussion</title>
     <link rel="stylesheet" href="styles/styles.css">
 </head>
-<body onload="checkAuth(); loadSubjects()">
-    
-    <body onload="checkAuth(); loadComments()"></body>
+<body onload="checkAuth(); loadComments()">
     <nav>
         <div class="logo"><a href="index.html">StudyBuddy</a></div>
         <ul>
             <li><a href="index.html">Home</a></li>
-            <!-- Dynamic Auth Section -->
             <li id="auth-link" class="auth-item">
                 <a href="accounts.html" class="auth-link">Sign In</a>
             </li>
@@ -28,18 +25,18 @@
     </nav>
 
     <div class="container">
-        <h1>Subjects</h1>
-        <div id="subject-list"></div>
-        <div class="creator-only" style="display: none;">
-            <input type="text" id="subject-name" placeholder="New Subject Name">
-            <button onclick="addSubject()">Add Subject</button>
+        <h1 id="subject-name">Discussion</h1>
+        <div id="comments-container"></div>
+        <div class="comment-box">
+            <textarea id="comment-input" placeholder="Type your message..."></textarea>
+            <input type="file" id="file-input">
+            <button onclick="postMessage()">Send</button>
         </div>
     </div>
-    
-    <!-- Example for school.html -->
-<body onload="checkAuth(); loadClasses()">
 
+    <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <script src="scripts/main.js"></script>
 </body>
 </html>
