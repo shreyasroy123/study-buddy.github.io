@@ -4,6 +4,16 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// Add this debugging helper at the top of your auth.js
+async function checkAuthStatus() {
+    const { data, error } = await supabaseClient.auth.getSession();
+    console.log('Auth status check:', { session: data?.session, error });
+    return { data, error };
+}
+
+// Call this when the page loads
+document.addEventListener('DOMContentLoaded', checkAuthStatus);
+
 // DOM Elements - Shared
 const togglePasswordElements = document.querySelectorAll('.toggle-password');
 
@@ -77,7 +87,9 @@ if (avatarInput) {
         }
     });
 }
+// Leave your Supabase init and other parts unchanged
 
+// Update the signup form event listener
 if (signupForm) {
     signupForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -109,7 +121,7 @@ if (signupForm) {
             submitBtn.disabled = true;
             
             // 1. Sign up the user with Supabase Auth
-            const { data: { user }, error: signUpError } = await supabaseClient.auth.signUp({
+            const { data: authData, error: signUpError } = await supabaseClient.auth.signUp({
                 email,
                 password,
                 options: {
@@ -117,53 +129,103 @@ if (signupForm) {
                         full_name: fullName,
                         phone: phone
                     },
-                    // Update this to your Netlify URL
                     emailRedirectTo: 'https://notesbuddy-gnr.netlify.app/login'
                 }
             });
             
             if (signUpError) throw signUpError;
             
-            // 2. Upload avatar if provided
-            let avatarUrl = null;
-            if (avatar) {
-                const fileExt = avatar.name.split('.').pop();
-                const fileName = `${user.id}.${fileExt}`;
-                const { data: uploadData, error: uploadError } = await supabaseClient.storage
-                    .from('avatars')
-                    .upload(fileName, avatar);
-                
-                if (uploadError) throw uploadError;
-                
-                // Get public URL
-                const { data: { publicUrl } } = supabaseClient.storage
-                    .from('avatars')
-                    .getPublicUrl(fileName);
-                
-                avatarUrl = publicUrl;
+            if (!authData?.user) {
+                throw new Error('User creation failed');
             }
             
-            // 3. Insert user profile data
-            const { error: profileError } = await supabaseClient
-                .from('profiles')
-                .insert([
-                    { 
-                        id: user.id,
-                        full_name: fullName,
-                        phone: phone,
-                        avatar_url: avatarUrl
-                    }
-                ]);
+            // Store user data temporarily
+            const userId = authData.user.id;
+            console.log('User created with ID:', userId);
             
-            if (profileError) throw profileError;
+            // Upload avatar if provided
+            let avatarUrl = null;
+            if (avatar) {
+                try {
+                    const fileExt = avatar.name.split('.').pop();
+                    const fileName = `${userId}.${fileExt}`;
+                    
+                    const { data: uploadData, error: uploadError } = await supabaseClient.storage
+                        .from('avatars')
+                        .upload(fileName, avatar);
+                    
+                    if (uploadError) {
+                        console.warn('Avatar upload error:', uploadError);
+                    } else {
+                        // Get public URL
+                        const { data: { publicUrl } } = supabaseClient.storage
+                            .from('avatars')
+                            .getPublicUrl(fileName);
+                        
+                        avatarUrl = publicUrl;
+                        console.log('Avatar uploaded successfully:', avatarUrl);
+                    }
+                } catch (avatarError) {
+                    console.warn('Error uploading avatar:', avatarError);
+                    // Continue with signup even if avatar upload fails
+                }
+            }
+            
+            // KEY CHANGE: Add a delay before creating profile to avoid foreign key error
+            console.log('Waiting for user record to be fully created...');
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // Now try to create the profile
+            try {
+                const { error: profileError } = await supabaseClient
+                    .from('profiles')
+                    .insert([
+                        { 
+                            id: userId,
+                            full_name: fullName,
+                            phone: phone,
+                            avatar_url: avatarUrl
+                        }
+                    ]);
+                
+                if (profileError) {
+                    console.error('First profile creation attempt failed:', profileError);
+                    
+                    // Wait a bit longer and try again
+                    await new Promise(resolve => setTimeout(resolve, 3000));
+                    
+                    const { error: retryError } = await supabaseClient
+                        .from('profiles')
+                        .insert([
+                            { 
+                                id: userId,
+                                full_name: fullName,
+                                phone: phone,
+                                avatar_url: avatarUrl
+                            }
+                        ]);
+                    
+                    if (retryError) {
+                        console.error('Retry profile creation failed:', retryError);
+                        throw retryError;
+                    } else {
+                        console.log('Profile created successfully on second attempt');
+                    }
+                } else {
+                    console.log('Profile created successfully');
+                }
+            } catch (profileError) {
+                console.error('Error creating user profile:', profileError);
+                throw profileError;
+            }
             
             // Show success message
-            alert('Account created successfully! Please verify your email address to continue.');
+            alert('Account created successfully! Please check your email to verify your account.');
             window.location.href = 'login.html';
             
         } catch (error) {
-            alert('Error creating account: ' + error.message);
             console.error('Signup error:', error);
+            alert('Error creating account: ' + (error.message || 'Unknown error'));
             
             // Reset button state
             const submitBtn = signupForm.querySelector('button[type="submit"]');
@@ -172,7 +234,32 @@ if (signupForm) {
         }
     });
 }
+// Add this function to auth.js
+async function checkProfileCreation(userId) {
+    try {
+        console.log('Checking profile creation for user:', userId);
+        const { data, error } = await supabaseClient
+            .from('profiles')
+            .select('*')
+            .eq('id', userId)
+            .single();
+            
+        if (error) {
+            console.error('Error checking profile:', error);
+            return false;
+        }
+        
+        console.log('Profile data found:', data);
+        return !!data;
+    } catch (err) {
+        console.error('Exception checking profile:', err);
+        return false;
+    }
+}
 
+// Call this after successful signup
+// In the signup handler:
+await check
 // Mobile menu toggle
 function showMenu() {
     const navLinks = document.getElementById('navLinks');

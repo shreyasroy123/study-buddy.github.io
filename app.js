@@ -1,6 +1,7 @@
 // Supabase Configuration
 const SUPABASE_URL = 'https://irqmhamkeytbiobbraxh.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlycW1oYW1rZXl0YmlvYmJyYXhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA4NTAxMjYsImV4cCI6MjA1NjQyNjEyNn0.nnSRe3Z1BiZjSOIgOzg3I8zv7TtUmei-bPAELw7eEl8';
+// Create Supabase client
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // DOM Elements
@@ -21,58 +22,134 @@ function hideMenu() {
 
 // Check if user is logged in
 document.addEventListener('DOMContentLoaded', async () => {
+    console.log('Checking auth status...');
+    
     try {
-        // Use supabaseClient instead of supabase
-        const { data: { user }, error } = await supabaseClient.auth.getUser();
+        // Get the current session
+        const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
         
-        if (error) throw error;
+        if (sessionError) {
+            console.error('Session error:', sessionError);
+            if (authButtons && userProfile) {
+                authButtons.style.display = 'flex';
+                userProfile.style.display = 'none';
+            }
+            return;
+        }
+        
+        if (!session) {
+            console.log('No active session');
+            if (authButtons && userProfile) {
+                authButtons.style.display = 'flex';
+                userProfile.style.display = 'none';
+            }
+            return;
+        }
+        
+        console.log('Session found, loading user data');
+        
+        // Session exists, get user
+        const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+        
+        if (userError) {
+            console.error('Error getting user:', userError);
+            if (authButtons && userProfile) {
+                authButtons.style.display = 'flex';
+                userProfile.style.display = 'none';
+            }
+            return;
+        }
         
         if (user) {
-            // User is logged in
-            displayUserProfile(user);
+            // User is logged in, display profile
+            await displayUserProfile(user);
         } else {
-            // User is not logged in
+            console.log('No user found despite session');
+            if (authButtons && userProfile) {
+                authButtons.style.display = 'flex';
+                userProfile.style.display = 'none';
+            }
+        }
+    } catch (error) {
+        console.error('Auth error:', error.message);
+        if (authButtons && userProfile) {
             authButtons.style.display = 'flex';
             userProfile.style.display = 'none';
         }
-    } catch (error) {
-        console.error('Error checking authentication:', error.message);
     }
 });
 
 // Display user profile info
 async function displayUserProfile(user) {
+    console.log('Loading profile for user:', user.id);
+    
     try {
-        // Get user profile data from the profiles table
-        // Use supabaseClient instead of supabase
+        // Get user profile from the profiles table
         const { data, error } = await supabaseClient
             .from('profiles')
-            .select('full_name, avatar_url')
+            .select('full_name, avatar_url, phone')
             .eq('id', user.id)
             .single();
         
-        if (error) throw error;
-        
-        if (data) {
-            // Display user profile info
-            profilePic.src = data.avatar_url || 'default-avatar.png';
-            userName.textContent = data.full_name;
+        if (error) {
+            console.error('Error fetching profile:', error);
+            if (userName) userName.textContent = user.email.split('@')[0];
+            if (profilePic) profilePic.src = 'images/default-avatar.png';
+        } else if (data) {
+            console.log('Profile loaded:', data);
             
+            if (userName) userName.textContent = data.full_name || user.email.split('@')[0];
+            
+            if (profilePic) {
+                if (data.avatar_url) {
+                    profilePic.src = data.avatar_url;
+                    // Add error handler for image loading
+                    profilePic.onerror = () => {
+                        profilePic.src = 'images/default-avatar.png';
+                    };
+                } else {
+                    profilePic.src = 'images/default-avatar.png';
+                }
+            }
+        } else {
+            console.warn('No profile found');
+            if (userName) userName.textContent = user.email.split('@')[0];
+            if (profilePic) profilePic.src = 'images/default-avatar.png';
+        }
+        
+        if (authButtons && userProfile) {
             authButtons.style.display = 'none';
             userProfile.style.display = 'flex';
         }
     } catch (error) {
-        console.error('Error fetching user profile:', error.message);
+        console.error('Error displaying profile:', error.message);
     }
 }
 
-// Add event listener for user profile dropdown
-userProfile.addEventListener('click', () => {
-    // Implement dropdown functionality if needed
-    console.log('Profile clicked');
-});
+// Add event listener for user profile dropdown if it exists
+if (userProfile) {
+    userProfile.addEventListener('click', () => {
+        // Implement dropdown functionality if needed
+        console.log('Profile clicked');
+    });
+}
 
-// Check for date for footer
+// Add logout functionality
+const logoutBtn = document.getElementById('logoutBtn');
+if (logoutBtn) {
+    logoutBtn.addEventListener('click', async () => {
+        try {
+            const { error } = await supabaseClient.auth.signOut();
+            if (error) throw error;
+            window.location.href = 'index.html';
+        } catch (error) {
+            console.error('Error signing out:', error.message);
+            alert('Failed to sign out. Please try again.');
+        }
+    });
+}
+
+// Update copyright year in footer
 document.addEventListener('DOMContentLoaded', () => {
     const copyright = document.querySelector('.copyright p');
     if (copyright) {

@@ -23,12 +23,22 @@
                     <li><a href="announcements.html">Announcements</a></li>
                 </ul>
             </div>
-            <div class="auth-buttons" id="authButtons">
-                <a href="login.html" class="btn login-btn">Log In</a>
-                <a href="signup.html" class="btn signup-btn">Sign Up</a>
-            </div>
-            <i class="fas fa-bars" onclick="showMenu()"></i>
-        </div>
+           <!-- User is not logged in -->
+<div class="auth-buttons" id="authButtons">
+    <a href="login.html" class="btn">Log In</a>
+    <a href="signup.html" class="btn">Sign Up</a>
+</div>
+
+<!-- User is logged in -->
+<div class="user-profile" id="userProfile" style="display:none;">
+    <img src="images/default-avatar.png" alt="User" id="profilePic">
+    <span id="userName">User</span>
+    <div class="profile-dropdown">
+        <a href="profile.html">My Profile</a>
+        <a href="#" id="logoutBtn">Logout</a>
+    </div>
+</div>
+
     </nav>
 
     <div class="auth-container">
