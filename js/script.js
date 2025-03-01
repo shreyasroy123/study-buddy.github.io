@@ -1,11 +1,18 @@
 // Store current user and time information
-const currentDateTime = '2025-03-01 10:51:49'; // UTC formatted time
+const currentDateTime = '2025-03-01 11:13:40'; // UTC formatted time
 const currentUserLogin = 'shreyasroy123';
 
-// Initialize Supabase client with auth configuration
+// Initialize Supabase client with specific site URL
 const supabase = supabaseJs.createClient(
     'https://zkirlipgjgbzjcmztfmi.supabase.co',
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpraXJsaXBnamdiempjbXp0Zm1pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA4MDk2MzIsImV4cCI6MjA1NjM4NTYzMn0.wDWggmQxr-OiOw--tXzCgStB9s4CsVd3rAOPPcBX-Os'
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpraXJsaXBnamdiempjbXp0Zm1pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA4MDk2MzIsImV4cCI6MjA1NjM4NTYzMn0.wDWggmQxr-OiOw--tXzCgStB9s4CsVd3rAOPPcBX-Os',
+    {
+        auth: {
+            autoRefreshToken: true,
+            persistSession: true,
+            detectSessionInUrl: true
+        }
+    }
 );
 
 // Get DOM elements
@@ -110,13 +117,12 @@ if (loginForm) {
         }
     });
 }
-    // Add profile picture preview functionality
+   
+// Add profile picture preview functionality
 if (signupProfilePicInput && signupPreviewImage) {
-    console.log('Setting up profile picture preview'); // Debug log
     signupProfilePicInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (file) {
-            // Check if file is an image
             if (!file.type.startsWith('image/')) {
                 alert('Please select an image file');
                 signupProfilePicInput.value = '';
@@ -124,7 +130,6 @@ if (signupProfilePicInput && signupPreviewImage) {
                 return;
             }
 
-            // Check file size (max 5MB)
             if (file.size > 5 * 1024 * 1024) {
                 alert('Image size should be less than 5MB');
                 signupProfilePicInput.value = '';
@@ -132,12 +137,10 @@ if (signupProfilePicInput && signupPreviewImage) {
                 return;
             }
 
-            // Create preview
             const reader = new FileReader();
             reader.onload = function(e) {
                 signupPreviewImage.src = e.target.result;
                 signupPreviewImage.style.display = 'block';
-                console.log('Preview image displayed'); // Debug log
             };
             reader.readAsDataURL(file);
         } else {
@@ -146,139 +149,138 @@ if (signupProfilePicInput && signupPreviewImage) {
     });
 }
 
+// Handle signup form submission
 if (signupForm) {
     signupForm.addEventListener('submit', async (e) => {
         e.preventDefault();
+        
+        if (signupError) signupError.textContent = '';
         
         const fullName = document.getElementById('signup-name').value;
         const email = document.getElementById('signup-email').value;
         const password = document.getElementById('signup-password').value;
         const confirmPassword = document.getElementById('signup-confirm-password').value;
         const phone = document.getElementById('signup-phone').value;
-        const profilePicFile = signupProfilePicInput ? signupProfilePicInput.files[0] : null;
-        
-        if (signupError) signupError.textContent = '';
         
         // Password validation
-        if (!validatePassword(password)) {
-            if (signupError) {
-                signupError.textContent = 'Password must contain at least one special character and one alphanumeric character';
-            }
-            return;
-        }
-        
         if (password !== confirmPassword) {
-            if (signupError) {
-                signupError.textContent = 'Passwords do not match';
-            }
+            if (signupError) signupError.textContent = 'Passwords do not match';
             return;
         }
         
         try {
-            // Step 1: Sign up the user
-            const hashedPassword = hashPassword(password);
+            // Show loading state
+            const submitButton = signupForm.querySelector('button[type="submit"]');
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.textContent = 'Signing up...';
+            }
+
+            // Step 1: Sign up with Supabase Auth
             const { data, error: signUpError } = await supabase.auth.signUp({
-                email,
-                password: hashedPassword,
+                email: email,
+                password: password,
                 options: {
                     data: {
                         full_name: fullName,
                         phone: phone
-                    }
+                    },
+                    emailRedirectTo: 'https://shreyasroy123.github.io/study-buddy.github.io/confirmation-success.html'
                 }
             });
-            
+
             if (signUpError) throw signUpError;
-            if (!data?.user) throw new Error('Signup failed - no user returned');
 
-            const user = data.user;
-            console.log('User created:', user.id); // Debug log
-
-            // Wait a moment for the auth user to be fully created
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            let avatarUrl = null;
-            
-            // Step 2: Upload profile picture if provided
-            if (profilePicFile) {
-                try {
-                    const fileExt = profilePicFile.name.split('.').pop();
-                    const fileName = `${user.id}_${Date.now()}.${fileExt}`;
-                    
-                    const { error: uploadError } = await supabase.storage
-                        .from('avatars')
-                        .upload(fileName, profilePicFile, {
-                            cacheControl: '3600',
-                            upsert: true
-                        });
-                    
-                    if (uploadError) throw uploadError;
-                    
-                    const { data: { publicUrl } } = supabase.storage
-                        .from('avatars')
-                        .getPublicUrl(fileName);
-                    
-                    avatarUrl = publicUrl;
-                } catch (uploadError) {
-                    console.error('Profile picture upload failed:', uploadError);
-                }
+            if (data?.user) {
+                console.log('Signup successful, user ID:', data.user.id);
+                
+                // Show success message with detailed instructions
+                const message = 'Sign up successful!\n\n' +
+                    'Important Instructions:\n' +
+                    '1. Check your email inbox for the confirmation link\n' +
+                    '2. If you don\'t see the email, please:\n' +
+                    '   - Check your Spam/Junk folder\n' +
+                    '   - Wait a few minutes and refresh your inbox\n' +
+                    '   - Add no-reply@supabase.co to your contacts\n' +
+                    '3. Click the confirmation link in the email\n' +
+                    '4. After confirming, return to login\n\n' +
+                    'Having trouble? Try these steps:\n' +
+                    '- Use a different email provider (Gmail/Outlook)\n' +
+                    '- Clear your browser cache and try again\n' +
+                    '- Contact support if issues persist';
+                
+                alert(message);
+                window.location.href = 'login.html';
+            } else {
+                throw new Error('Signup failed - no user data returned');
             }
-            
-            // Step 3: Create profile
-            const profileData = {
-                id: user.id,
-                email,
-                full_name: fullName,
-                phone,
-                created_at: currentDateTime,
-                password_hash: hashedPassword,
-                avatar_url: avatarUrl
-            };
-
-            // Verify user exists in auth.users before creating profile
-            const { data: authUser, error: authCheckError } = await supabase
-                .from('auth.users')
-                .select('id')
-                .eq('id', user.id)
-                .single();
-
-            if (authCheckError) {
-                console.error('Auth user check failed:', authCheckError);
-                throw new Error('Failed to verify user creation. Please try again.');
-            }
-
-            const { error: profileError } = await supabase
-                .from('profiles')
-                .insert([profileData])
-                .select()
-                .single();
-            
-            if (profileError) {
-                console.error('Profile creation error:', profileError);
-                throw profileError;
-            }
-            
-            // Show success message
-            const message = 'Sign up successful! Please:\n\n' +
-                '1. Check your email inbox (and spam folder) for the confirmation link\n' +
-                '2. Click the link to verify your account\n' +
-                '3. After confirmation, you can log in to your account';
-            alert(message);
-            
-            window.location.href = 'login.html';
             
         } catch (error) {
             console.error('Signup error:', error);
+            
+            // Reset button state
+            const submitButton = signupForm.querySelector('button[type="submit"]');
+            if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Sign Up';
+            }
+            
             if (signupError) {
-                if (error.message.includes('foreign key constraint')) {
-                    signupError.textContent = 'Account creation in progress. Please try again in a few moments.';
+                if (error.message.includes('valid email')) {
+                    signupError.textContent = 'Please enter a valid email address';
+                } else if (error.message.includes('already exists')) {
+                    signupError.textContent = 'An account with this email already exists';
                 } else {
-                    signupError.textContent = `Sign up failed: ${error.message}`;
+                    signupError.textContent = 'Sign up failed: ' + error.message;
                 }
             }
         }
     });
 }
+
+// Check for auth state changes
+supabase.auth.onAuthStateChange((event, session) => {
+    console.log('Auth event:', event); // Debug log
+    
+    if (event === 'SIGNED_IN') {
+        window.location.href = 'index.html';
+    } else if (event === 'SIGNED_OUT') {
+        window.location.href = 'login.html';
+    }
+});
+
+// Handle auth state changes
+supabase.auth.onAuthStateChange(async (event, session) => {
+    console.log('Auth state changed:', event); // Debug log
+    
+    if (event === 'SIGNED_IN') {
+        // User has signed in - check if they have a profile
+        const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+            
+        if (!profile && !profileError) {
+            // Create profile if it doesn't exist
+            const { error: insertError } = await supabase
+                .from('profiles')
+                .insert([{
+                    id: session.user.id,
+                    email: session.user.email,
+                    full_name: session.user.user_metadata?.full_name || '',
+                    phone: session.user.user_metadata?.phone || '',
+                    created_at: currentDateTime
+                }]);
+                
+            if (insertError) console.error('Error creating profile:', insertError);
+        }
+        
+        window.location.href = 'index.html';
+    } else if (event === 'SIGNED_OUT') {
+        window.location.href = 'login.html';
+    }
+});
 
 
     
