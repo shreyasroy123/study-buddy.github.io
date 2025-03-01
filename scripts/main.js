@@ -1,6 +1,6 @@
 // 1. INITIALIZE SUPABASE FIRST
 const supabaseUrl = 'https://wyyiifksxojppfqhpvgt.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5eWlpZmtzeG9qcHBmcWhwdmd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA2NTM2MzAsImV4cCI6MjA1NjIyOTYzMH0.fBljtE2zY64[...]
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5eWlpZmtzeG9qcHBmcWhwdmd0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA2NTM2MzAsImV4cCI6MjA1NjIyOTYzMH0.fBljtE2zY64il7GIOoIqAmupfxXwPFjQRV42x7aZrWw'
 // Fix for initialization error - use the global object
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
@@ -59,10 +59,16 @@ async function signUp() {
     const phone = document.getElementById('signup-phone').value;
     const profilePic = document.getElementById('signup-profile-pic').files[0];
 
-    // Create user
+    // Include metadata during signup to be used by trigger
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
-      password
+      password,
+      options: {
+        data: {
+          username: username,
+          phone_number: phone
+        }
+      }
     });
 
     if (authError) throw authError;
@@ -71,18 +77,8 @@ async function signUp() {
       throw new Error('User creation failed. Please try again later.');
     }
 
-    // Wait a moment for the auth to complete before continuing
+    // Wait a moment for the auth hook and trigger to complete
     await delay(1000);
-
-    // Create profile first (before uploading profile picture)
-    const { error: profileError } = await supabase.from('profiles').insert({
-      user_id: authData.user.id,
-      username,
-      phone_number: phone,
-      profile_picture_url: '' // Initially empty, will update after upload
-    });
-
-    if (profileError) throw profileError;
 
     // Upload profile picture if provided
     let profilePicUrl = '';
@@ -130,7 +126,6 @@ async function signUp() {
     alert(`Signup failed: ${error.message}`);
   }
 }
-
 async function login() {
   try {
     const email = document.getElementById('login-email').value;
