@@ -1,11 +1,27 @@
-// Initialize Supabase client
-const supabaseUrl = 'https://zkirlipgjgbzjcmztfmi.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpraXJsaXBnamdiempjbXp0Zm1pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA4MDk2MzIsImV4cCI6MjA1NjM4NTYzMn0.wDWggmQxr-OiOw--tXzCgStB9s4CsVd3rAOPPcBX-Os';
-const supabase = supabase.createClient(supabaseUrl, supabaseKey);
-
-// Store current user and time information
-const currentDateTime = '2025-03-01 08:05:29'; // UTC formatted time
+const currentDateTime = '2025-03-01 09:34:05'; // UTC formatted time
 const currentUserLogin = 'shreyasroy123';
+
+// Initialize Supabase client - MOVED AFTER importing the library in HTML
+const supabaseUrl = 'https://zkirlipgjgbzjcmztfmi.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpraXJsaXBnamdiempjbXp0Zm1pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA4MDk2MzIsImV4cCI6MjA1NjM4NTYzMn0.wDWggmQxr-O[...]';
+const supabase = supabaseClient.createClient(supabaseUrl, supabaseKey);
+
+// Password hashing function using CryptoJS
+function hashPassword(password) {
+    // Using SHA-256 for password hashing with a salt
+    const salt = CryptoJS.lib.WordArray.random(128/8);
+    const hashedPassword = CryptoJS.SHA256(password + salt).toString();
+    return {
+        hash: hashedPassword,
+        salt: salt.toString()
+    };
+}
+
+// Verify password function using CryptoJS
+function verifyPassword(password, hash, salt) {
+    const hashedAttempt = CryptoJS.SHA256(password + salt).toString();
+    return hashedAttempt === hash;
+}
 
 document.addEventListener('DOMContentLoaded', function() {
     // UI Elements
@@ -41,7 +57,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (schoolList) {
         fetchSchools();
     }
-    
     // Handle login form submission
     if (loginForm) {
         loginForm.addEventListener('submit', async (e) => {
@@ -53,15 +68,29 @@ document.addEventListener('DOMContentLoaded', function() {
             if (loginError) loginError.textContent = '';
             
             try {
-                const { data, error } = await supabase.auth.signInWithPassword({
-                    email,
-                    password
-                });
-                
-                if (error) throw error;
-                
-                // Redirect to home page after successful login
-                window.location.href = 'index.html';
+                // Hash the password before sending to Supabase
+                const { data: userData, error: userError } = await supabase
+                    .from('profiles')
+                    .select('password_hash, password_salt')
+                    .eq('email', email)
+                    .single();
+
+                if (userError) throw userError;
+
+                // Verify the password
+                if (verifyPassword(password, userData.password_hash, userData.password_salt)) {
+                    const { data, error } = await supabase.auth.signInWithPassword({
+                        email,
+                        password: userData.password_hash // Use hashed password
+                    });
+                    
+                    if (error) throw error;
+                    
+                    alert('Successfully signed in!');
+                    window.location.href = 'index.html';
+                } else {
+                    throw new Error('Invalid password');
+                }
                 
             } catch (error) {
                 if (loginError) {
@@ -72,8 +101,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
-    // Preview profile image before upload on signup form
     if (signupProfilePicInput && signupPreviewImage) {
         signupProfilePicInput.addEventListener('change', () => {
             const file = signupProfilePicInput.files[0];
@@ -87,7 +114,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Handle signup form submission
+        // Handle signup form submission
     if (signupForm) {
         signupForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -122,10 +149,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             try {
-                // Step 1: Create user account
+                // Hash the password
+                const { hash: passwordHash, salt: passwordSalt } = hashPassword(password);
+                
+                // Step 1: Create user account with hashed password
                 const { data: authData, error: authError } = await supabase.auth.signUp({
                     email,
-                    password,
+                    password: passwordHash,
                     options: {
                         data: {
                             full_name: fullName,
@@ -145,18 +175,16 @@ document.addEventListener('DOMContentLoaded', function() {
                         const fileName = `${authData.user.id}-${Date.now()}.${fileExt}`;
                         const filePath = `avatars/${fileName}`;
                         
-                        // Upload image to Supabase Storage
                         const { error: uploadError } = await supabase.storage
                             .from('avatars')
                             .upload(filePath, profilePicFile);
                         
                         if (uploadError) throw uploadError;
                         
-                        // Get public URL for the image
                         profilePicUrl = fileName;
                     }
                     
-                    // Step 3: Create user profile in the profiles table
+                    // Step 3: Create user profile with password hash and salt
                     const { error: profileError } = await supabase
                         .from('profiles')
                         .insert([
@@ -165,16 +193,18 @@ document.addEventListener('DOMContentLoaded', function() {
                                 full_name: fullName,
                                 avatar_url: profilePicUrl,
                                 phone: phone,
-                                created_at: currentDateTime
+                                created_at: currentDateTime,
+                                password_hash: passwordHash,
+                                password_salt: passwordSalt,
+                                email: email
                             }
                         ]);
                     
                     if (profileError) throw profileError;
+                    
+                    alert('Successfully signed up!');
+                    window.location.href = 'login.html';
                 }
-                
-                alert('Sign up successful! Please check your email to verify your account.');
-                // Redirect to login page
-                window.location.href = 'login.html';
                 
             } catch (error) {
                 if (signupError) {
@@ -185,7 +215,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
     // Handle logout
     if (logoutLink) {
         logoutLink.addEventListener('click', async (e) => {
