@@ -117,7 +117,8 @@ if (signupForm) {
                         full_name: fullName,
                         phone: phone
                     },
-                    emailRedirectTo: window.location.origin
+                    // Update this to your Netlify URL
+                    emailRedirectTo: 'https://notesbuddy-gnr.netlify.app/login'
                 }
             });
             

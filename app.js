@@ -22,7 +22,8 @@ function hideMenu() {
 // Check if user is logged in
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        const { data: { user }, error } = await supabase.auth.getUser();
+        // Use supabaseClient instead of supabase
+        const { data: { user }, error } = await supabaseClient.auth.getUser();
         
         if (error) throw error;
         
@@ -43,7 +44,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function displayUserProfile(user) {
     try {
         // Get user profile data from the profiles table
-        const { data, error } = await supabase
+        // Use supabaseClient instead of supabase
+        const { data, error } = await supabaseClient
             .from('profiles')
             .select('full_name, avatar_url')
             .eq('id', user.id)
