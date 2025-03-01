@@ -1,5 +1,5 @@
 // Store current user and time information
-const currentDateTime = '2025-03-01 11:13:40'; // UTC formatted time
+const currentDateTime = '2025-03-01 12:39:29'; // UTC formatted time
 const currentUserLogin = 'shreyasroy123';
 
 // Initialize Supabase client with specific site URL
@@ -40,12 +40,7 @@ const navbarTemplate = `
         </div>
     </nav>`;
 
-// Insert navbar when DOM loads
-document.addEventListener('DOMContentLoaded', function() {
-    if (!document.querySelector('.navbar')) {
-        document.body.insertAdjacentHTML('afterbegin', navbarTemplate);
-    }
-});
+
 // Get DOM elements
 const signupForm = document.getElementById('signup-form');
 const loginForm = document.getElementById('login-form');
@@ -54,14 +49,6 @@ const loginError = document.getElementById('login-error');
 const signupProfilePicInput = document.getElementById('signup-profile-pic');
 const signupPreviewImage = document.getElementById('signup-preview-image');
 
-// Check for authentication status changes
-supabase.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN') {
-        window.location.href = 'index.html';
-    } else if (event === 'SIGNED_OUT') {
-        window.location.href = 'login.html';
-    }
-});
 
 // Add CryptoJS password hashing functions
 function hashPassword(password) {
@@ -76,8 +63,10 @@ function verifyPassword(password, hash, salt) {
 
 
 document.addEventListener('DOMContentLoaded', function() {
+    if (!document.querySelector('.navbar')) {
+        document.body.insertAdjacentHTML('afterbegin', navbarTemplate);
+    }
     // UI Elements
-    const schoolList = document.getElementById('school-list');
     const logoutLink = document.getElementById('logout-link');
     const profilePic = document.getElementById('profile-pic');
     const userName = document.getElementById('user-name');
@@ -88,7 +77,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const profilePicForm = document.getElementById('profile-pic-form');
     const profilePicInput = document.getElementById('profile-pic-input');
     const previewImage = document.getElementById('preview-image');
-    
+    const schoolList = document.getElementById('school-list');
     // Login form elements
     const loginForm = document.getElementById('login-form');
     const loginError = document.getElementById('login-error');
@@ -328,119 +317,31 @@ function updateNavbar(isAuthenticated, profile = null) {
             </div>`;
     }
 }
-// Initialize navbar
-async function initializeNavbar() {
-    console.log('Initializing navbar...'); // Debug log
-
-    // First, ensure the navbar exists
-    const navbarNav = document.querySelector('.navbar-nav');
-    if (!navbarNav) {
-        console.error('Navbar not found');
-        return;
-    }
-
-    // Clear existing nav items
-    navbarNav.innerHTML = `
-        <li class="nav-item">
-            <a class="nav-link" href="index.html">Home</a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" href="schools.html">Schools</a>
-        </li>
-    `;
-
-    try {
-        // Check current session
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-            throw sessionError;
-        }
-
-        console.log('Session status:', session ? 'Logged in' : 'Not logged in'); // Debug log
-
-        if (session && session.user) {
-            // User is logged in
-            console.log('User ID:', session.user.id); // Debug log
-
-            // Fetch user profile
-            const { data: profile, error: profileError } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', session.user.id)
-                .single();
-
-            if (profileError) {
-                console.error('Profile fetch error:', profileError);
-            }
-
-            // Add authenticated user elements
-            navbarNav.innerHTML += `
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" 
-                       data-bs-toggle="dropdown" aria-expanded="false">
-                        <img src="${profile?.avatar_url || 'images/default-avatar.png'}" 
-                             alt="Profile" class="rounded-circle" width="30" height="30">
-                        ${profile?.full_name || 'User'}
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-                        <li><a class="dropdown-item" href="profile.html">Profile</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" href="#" id="logout-btn">Logout</a></li>
-                    </ul>
-                </li>
-            `;
-
-            // Add logout handler
-            const logoutBtn = document.getElementById('logout-btn');
-            if (logoutBtn) {
-                logoutBtn.addEventListener('click', async (e) => {
-                    e.preventDefault();
-                    console.log('Logout clicked'); // Debug log
-                    try {
-                        const { error } = await supabase.auth.signOut();
-                        if (error) throw error;
-                        window.location.href = 'login.html';
-                    } catch (error) {
-                        console.error('Logout error:', error);
-                    }
-                });
-            }
-        } else {
-            // User is not logged in
-            navbarNav.innerHTML += `
-                <li class="nav-item">
-                    <a class="nav-link" href="login.html">Login</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="signup.html">Sign Up</a>
-                </li>
-            `;
-        }
-    } catch (error) {
-        console.error('Navbar initialization error:', error);
-        // Add default unauthenticated nav items
-        navbarNav.innerHTML += `
-            <li class="nav-item">
-                <a class="nav-link" href="login.html">Login</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="signup.html">Sign Up</a>
-            </li>
-        `;
-    }
-}
-// Initialize navbar on page load
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('DOM Content Loaded'); // Debug log
-    initializeNavbar();
-});
-// Keep only this ONE auth state change listener
+// Single auth state change listener
 supabase.auth.onAuthStateChange(async (event, session) => {
     console.log('Auth state changed:', event);
     await checkAuth(); // Update navbar
     
     if (event === 'SIGNED_IN') {
+        // Create profile if it doesn't exist
+        if (session?.user) {
+            const { data: profile, error: profileError } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', session.user.id)
+                .single();
+                
+            if (!profile && !profileError) {
+                await supabase.from('profiles').insert([{
+                    id: session.user.id,
+                    email: session.user.email,
+                    full_name: session.user.user_metadata?.full_name || '',
+                    phone: session.user.user_metadata?.phone || '',
+                    created_at: currentDateTime
+                }]);
+            }
+        }
+        
         if (!window.location.pathname.includes('index.html')) {
             window.location.href = 'index.html';
         }
