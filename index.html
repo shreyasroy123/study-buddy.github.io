@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NotesBuddy</title>
+    <title>NotesBuddy - Sign Up</title>
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
@@ -11,43 +11,68 @@
         <nav>
             <ul>
                 <li><a href="index.html">Home</a></li>
-                <li><a href="about.html">About</a></li>
-                <li class="auth-section logged-out"><a href="accounts.html">Log in</a></li>
-                <li class="auth-section logged-out"><a href="accounts.html">Sign up</a></li>
-                <!-- Profile section (visible only when logged in) -->
-                <li class="profile-section auth-section logged-in" style="display: none;">
-                    <div class="profile-dropdown">
-                        <img id="profile-pic" src="images/default-profile.png" alt="Profile" class="profile-pic">
-                        <div class="profile-dropdown-content">
-                            <a href="#" id="upload-profile-pic">Upload Profile Picture</a>
-                            <a href="#" id="profile-link">My Profile</a>
-                            <a href="#" id="logout-link">Log Out</a>
-                        </div>
-                    </div>
-                </li>
+                <li><a href="login.html">Login</a></li>
+                <li><a href="signup.html" class="active">Sign Up</a></li>
             </ul>
         </nav>
     </header>
     
-    <!-- Upload profile picture form (hidden by default) -->
-    <div class="overlay" id="overlay"></div>
-    <div class="upload-form" id="upload-form">
-        <h3>Upload Profile Picture</h3>
-        <form id="profile-pic-form">
-            <input type="file" id="profile-pic-input" accept="image/*">
-            <div>
-                <button type="submit">Upload</button>
-                <button type="button" id="cancel-upload">Cancel</button>
-            </div>
-        </form>
-    </div>
-    
     <main>
-        <h1>Welcome to NotesBuddy</h1>
-        <h2>List of Schools</h2>
-        <ul id="school-list"></ul>
+        <div class="auth-container">
+            <h1>Create Your Account</h1>
+            <form id="signup-form">
+                <div class="form-group">
+                    <label for="signup-name">Full Name</label>
+                    <input type="text" id="signup-name" name="name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="signup-email">Email</label>
+                    <input type="email" id="signup-email" name="email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="signup-password">Password</label>
+                    <input type="password" id="signup-password" name="password" required>
+                    <p class="form-hint">Password must contain at least one special character and one alphanumeric character</p>
+                </div>
+                
+                <div class="form-group">
+                    <label for="signup-confirm-password">Confirm Password</label>
+                    <input type="password" id="signup-confirm-password" name="confirm-password" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="signup-phone">Phone Number</label>
+                    <input type="tel" id="signup-phone" name="phone" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="signup-profile-pic">Profile Picture</label>
+                    <input type="file" id="signup-profile-pic" name="profile-pic" accept="image/*">
+                    <div class="profile-preview">
+                        <img id="signup-preview-image" src="images/default-profile.png" alt="Preview">
+                    </div>
+                </div>
+                
+                <div id="signup-error" class="error-message"></div>
+                
+                <div class="form-group">
+                    <button type="submit">Create Account</button>
+                </div>
+                
+                <div class="form-footer">
+                    <p>Already have an account? <a href="login.html">Login</a></p>
+                </div>
+            </form>
+        </div>
     </main>
     
+    <footer>
+        <p>&copy; 2025 NotesBuddy. All rights reserved.</p>
+    </footer>
+    
+    <!-- Supabase JavaScript library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/script.js"></script>
 </body>
