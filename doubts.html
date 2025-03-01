@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Questions & Doubts - NotesBuddy</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-container">
+            <div class="logo">
+                <a href="index.html">NotesBuddy</a>
+            </div>
+            <div class="nav-links" id="navLinks">
+                <i class="fas fa-times" onclick="hideMenu()"></i>
+                <ul>
+                    <li><a href="schools.html">Schools</a></li>
+                    <li><a href="doubts.html" class="active">Questions/Doubts</a></li>
+                    <li><a href="announcements.html">Announcements</a></li>
+                </ul>
+            </div>
+            <div class="auth-buttons" id="authButtons">
+                <a href="login.html" class="btn login-btn">Log In</a>
+                <a href="signup.html" class="btn signup-btn">Sign Up</a>
+            </div>
+            <div class="user-profile" id="userProfile" style="display: none;">
+                <img src="" alt="Profile" id="profilePic">
+                <span id="userName">shreyasroy123</span>
+            </div>
+            <i class="fas fa-bars" onclick="showMenu()"></i>
+        </div>
+    </nav>
+
+    <div class="page-header">
+        <div class="container">
+            <h1>Questions & Doubts</h1>
+            <p>Get your questions answered by the community</p>
+        </div>
+    </div>
+
+    <div class="container" style="padding: 50px 0;">
+        <div style="text-align: center; padding: 100px 0;">
+            <i class="fas fa-question-circle" style="font-size: 4rem; color: #4e73df; margin-bottom: 20px;"></i>
+            <h2>Coming Soon!</h2>
+            <p>We're working on the questions and doubts feature. Check back later!</p>
+            <p>Last updated: 2025-03-01 17:25:24</p>
+        </div>
+    </div>
+
+    <footer>
+        <div class="footer-container">
+            <div class="footer-logo">
+                <h3>NotesBuddy</h3>
+                <p>Your Study Companion</p>
+            </div>
+            <div class="footer-links">
+                <h4>Quick Links</h4>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="schools.html">Schools</a></li>
+                    <li><a href="doubts.html">Questions/Doubts</a></li>
+                    <li><a href="announcements.html">Announcements</a></li>
+                </ul>
+            </div>
+            <div class="footer-contact">
+                <h4>Contact Us</h4>
+                <p>Email: info@notesbuddy.com</p>
+                <p>Phone: +1 (123) 456-7890</p>
+                <div class="social-icons">
+                    <a href="#"><i class="fab fa-facebook"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                    <a href="#"><i class="fab fa-linkedin"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="copyright">
+            <p>&copy; 2025 NotesBuddy. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
