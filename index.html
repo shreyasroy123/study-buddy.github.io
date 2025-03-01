@@ -8,20 +8,22 @@
 </head>
 <body>
     <header>
-        <nav>
-            <ul>
-                <li><a href="index.html" class="active">Home</a></li>
-                <li class="logged-out"><a href="login.html">Login</a></li>
-                <li class="logged-out"><a href="signup.html">Sign Up</a></li>
-                <li class="logged-in">
-                    <div class="profile-section">
-                        <img id="profile-pic" src="images/default-profile.png" alt="Profile Picture">
-                        <span id="user-name">User</span>
-                    </div>
-                </li>
-                <li class="logged-in"><a href="#" id="logout-link">Logout</a></li>
+        <!-- Add this navbar structure to all your HTML files -->
+<nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="index.html">Study Buddy</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" 
+                data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" 
+                aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNavDropdown">
+            <ul class="navbar-nav ms-auto">
+                <!-- Dynamic content will be inserted here -->
             </ul>
-        </nav>
+        </div>
+    </div>
+</nav>
     </header>
     
     <main>

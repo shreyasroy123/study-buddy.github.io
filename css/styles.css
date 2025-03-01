@@ -404,3 +404,39 @@ input[type="file"]:focus {
     outline: 0;
     box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25);
 }
+/* Navbar styles */
+.navbar {
+    padding: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.navbar-nav {
+    align-items: center;
+}
+
+.nav-item.dropdown {
+    display: flex;
+    align-items: center;
+}
+
+.dropdown-toggle img {
+    margin-right: 8px;
+}
+
+.rounded-circle {
+    object-fit: cover;
+    border: 2px solid #fff;
+    box-shadow: 0 0 4px rgba(0,0,0,0.2);
+}
+
+.dropdown-menu-end {
+    right: 0;
+    left: auto;
+}
+
+/* Ensure dropdown works on hover too */
+@media (min-width: 992px) {
+    .dropdown:hover .dropdown-menu {
+        display: block;
+    }
+}
