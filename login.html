@@ -47,10 +47,15 @@
     <footer>
         <p>&copy; 2025 NotesBuddy. All rights reserved.</p>
     </footer>
+    <!-- Add this in your login form -->
+<div id="login-error" class="error-message"></div>
     
-    <!-- Supabase JavaScript library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/script.js"></script>
-</body>
+   <!-- Add these script tags in your HTML file's head or before the closing body tag -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script>
+    // Create a global supabaseJs variable
+    const supabaseJs = supabase;
+</script>
+<script src="js/script.js"></script>
 </html>

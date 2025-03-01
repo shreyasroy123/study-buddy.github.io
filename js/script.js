@@ -1,20 +1,15 @@
-const currentDateTime = '2025-03-01 09:34:05'; // UTC formatted time
+// Store current user and time information
+const currentDateTime = '2025-03-01 10:18:07'; // UTC formatted time
 const currentUserLogin = 'shreyasroy123';
 
-// Initialize Supabase client - MOVED AFTER importing the library in HTML
+// Initialize Supabase client
 const supabaseUrl = 'https://zkirlipgjgbzjcmztfmi.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpraXJsaXBnamdiempjbXp0Zm1pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA4MDk2MzIsImV4cCI6MjA1NjM4NTYzMn0.wDWggmQxr-O[...]';
-const supabase = supabaseClient.createClient(supabaseUrl, supabaseKey);
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpraXJsaXBnamdiempjbXp0Zm1pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA4MDk2MzIsImV4cCI6MjA1NjM4NTYzMn0.wDWggmQxr-OiOw--tXzCgStB9s4CsVd3rAOPPcBX-Os';
+const supabase = supabaseJs.createClient(supabaseUrl, supabaseKey);
 
-// Password hashing function using CryptoJS
+// Add CryptoJS password hashing functions
 function hashPassword(password) {
-    // Using SHA-256 for password hashing with a salt
-    const salt = CryptoJS.lib.WordArray.random(128/8);
-    const hashedPassword = CryptoJS.SHA256(password + salt).toString();
-    return {
-        hash: hashedPassword,
-        salt: salt.toString()
-    };
+    return CryptoJS.SHA256(password).toString();
 }
 
 // Verify password function using CryptoJS
@@ -57,50 +52,43 @@ document.addEventListener('DOMContentLoaded', function() {
     if (schoolList) {
         fetchSchools();
     }
-    // Handle login form submission
-    if (loginForm) {
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
+// Handle login form submission
+if (loginForm) {
+    loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-password').value;
+        
+        if (loginError) loginError.textContent = '';
+        
+        try {
+            const hashedPassword = hashPassword(password);
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email,
+                password: hashedPassword
+            });
             
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
-            
-            if (loginError) loginError.textContent = '';
-            
-            try {
-                // Hash the password before sending to Supabase
-                const { data: userData, error: userError } = await supabase
-                    .from('profiles')
-                    .select('password_hash, password_salt')
-                    .eq('email', email)
-                    .single();
-
-                if (userError) throw userError;
-
-                // Verify the password
-                if (verifyPassword(password, userData.password_hash, userData.password_salt)) {
-                    const { data, error } = await supabase.auth.signInWithPassword({
-                        email,
-                        password: userData.password_hash // Use hashed password
-                    });
-                    
-                    if (error) throw error;
-                    
-                    alert('Successfully signed in!');
-                    window.location.href = 'index.html';
-                } else {
-                    throw new Error('Invalid password');
+            if (error) {
+                if (error.message.includes('Email not confirmed')) {
+                    throw new Error('Please check your email to confirm your account before logging in.');
                 }
-                
-            } catch (error) {
-                if (loginError) {
-                    loginError.textContent = `Login failed: ${error.message}`;
-                } else {
-                    alert('Login failed: ' + error.message);
-                }
+                throw error;
             }
-        });
-    }
+            
+            // Redirect to home page after successful login
+            window.location.href = 'index.html';
+            
+        } catch (error) {
+            console.error('Login error:', error);
+            if (loginError) {
+                loginError.textContent = `Login failed: ${error.message}`;
+            } else {
+                alert('Login failed: ' + error.message);
+            }
+        }
+    });
+}
     if (signupProfilePicInput && signupPreviewImage) {
         signupProfilePicInput.addEventListener('change', () => {
             const file = signupProfilePicInput.files[0];
@@ -113,108 +101,123 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
-        // Handle signup form submission
-    if (signupForm) {
-        signupForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const fullName = document.getElementById('signup-name').value;
-            const email = document.getElementById('signup-email').value;
-            const password = document.getElementById('signup-password').value;
-            const confirmPassword = document.getElementById('signup-confirm-password').value;
-            const phone = document.getElementById('signup-phone').value;
-            const profilePicFile = signupProfilePicInput ? signupProfilePicInput.files[0] : null;
-            
-            if (signupError) signupError.textContent = '';
-            
-            // Validate password
-            if (!validatePassword(password)) {
-                if (signupError) {
-                    signupError.textContent = 'Password must contain at least one special character and one alphanumeric character';
-                } else {
-                    alert('Password must contain at least one special character and one alphanumeric character');
-                }
-                return;
+
+// Handle signup form submission
+if (signupForm) {
+    signupForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const fullName = document.getElementById('signup-name').value;
+        const email = document.getElementById('signup-email').value;
+        const password = document.getElementById('signup-password').value;
+        const confirmPassword = document.getElementById('signup-confirm-password').value;
+        const phone = document.getElementById('signup-phone').value;
+        const profilePicFile = signupProfilePicInput ? signupProfilePicInput.files[0] : null;
+        
+        if (signupError) signupError.textContent = '';
+        
+        // Password validation
+        if (!validatePassword(password)) {
+            if (signupError) {
+                signupError.textContent = 'Password must contain at least one special character and one alphanumeric character';
             }
-            
-            // Check if passwords match
-            if (password !== confirmPassword) {
-                if (signupError) {
-                    signupError.textContent = 'Passwords do not match';
-                } else {
-                    alert('Passwords do not match');
-                }
-                return;
+            return;
+        }
+        
+        if (password !== confirmPassword) {
+            if (signupError) {
+                signupError.textContent = 'Passwords do not match';
             }
-            
-            try {
-                // Hash the password
-                const { hash: passwordHash, salt: passwordSalt } = hashPassword(password);
-                
-                // Step 1: Create user account with hashed password
-                const { data: authData, error: authError } = await supabase.auth.signUp({
-                    email,
-                    password: passwordHash,
-                    options: {
-                        data: {
-                            full_name: fullName,
-                            phone: phone
-                        }
+            return;
+        }
+        
+        try {
+            // Step 1: Sign up the user
+            const hashedPassword = hashPassword(password);
+            const { data: { user }, error: signUpError } = await supabase.auth.signUp({
+                email,
+                password: hashedPassword,
+                options: {
+                    data: {
+                        full_name: fullName,
+                        phone: phone
                     }
+                }
+            });
+            
+            if (signUpError) throw signUpError;
+            if (!user) throw new Error('Signup failed - no user returned');
+
+            let avatarUrl = null;
+            
+            // Step 2: Upload profile picture if provided
+            if (profilePicFile) {
+                try {
+                    const fileExt = profilePicFile.name.split('.').pop();
+                    const fileName = `${user.id}_${Date.now()}.${fileExt}`;
+                    
+                    const { error: uploadError } = await supabase.storage
+                        .from('avatars')
+                        .upload(fileName, profilePicFile, {
+                            cacheControl: '3600',
+                            upsert: true
+                        });
+                    
+                    if (uploadError) throw uploadError;
+                    
+                    const { data: { publicUrl } } = supabase.storage
+                        .from('avatars')
+                        .getPublicUrl(fileName);
+                    
+                    avatarUrl = publicUrl;
+                } catch (uploadError) {
+                    console.error('Profile picture upload failed:', uploadError);
+                }
+            }
+            
+            // Step 3: Create profile
+            const profileData = {
+                id: user.id,
+                email,
+                full_name: fullName,
+                phone,
+                created_at: currentDateTime,
+                password_hash: hashedPassword
+            };
+            
+            if (avatarUrl) {
+                profileData.avatar_url = avatarUrl;
+            }
+
+            const { error: profileError } = await supabase
+                .from('profiles')
+                .upsert([profileData], {
+                    onConflict: 'id',
+                    returning: 'minimal'
                 });
-                
-                if (authError) throw authError;
-                
-                if (authData.user) {
-                    let profilePicUrl = null;
-                    
-                    // Step 2: Upload profile picture if provided
-                    if (profilePicFile) {
-                        const fileExt = profilePicFile.name.split('.').pop();
-                        const fileName = `${authData.user.id}-${Date.now()}.${fileExt}`;
-                        const filePath = `avatars/${fileName}`;
-                        
-                        const { error: uploadError } = await supabase.storage
-                            .from('avatars')
-                            .upload(filePath, profilePicFile);
-                        
-                        if (uploadError) throw uploadError;
-                        
-                        profilePicUrl = fileName;
-                    }
-                    
-                    // Step 3: Create user profile with password hash and salt
-                    const { error: profileError } = await supabase
-                        .from('profiles')
-                        .insert([
-                            {
-                                id: authData.user.id,
-                                full_name: fullName,
-                                avatar_url: profilePicUrl,
-                                phone: phone,
-                                created_at: currentDateTime,
-                                password_hash: passwordHash,
-                                password_salt: passwordSalt,
-                                email: email
-                            }
-                        ]);
-                    
-                    if (profileError) throw profileError;
-                    
-                    alert('Successfully signed up!');
-                    window.location.href = 'login.html';
-                }
-                
-            } catch (error) {
-                if (signupError) {
-                    signupError.textContent = `Sign up failed: ${error.message}`;
+            
+            if (profileError) {
+                console.error('Profile creation error:', profileError);
+                throw profileError;
+            }
+            
+            // Show success message with email confirmation instructions
+            alert('Sign up successful! Please check your email to confirm your account before logging in.');
+            window.location.href = 'login.html';
+            
+        } catch (error) {
+            console.error('Signup error:', error);
+            if (signupError) {
+                // Handle specific error cases
+                if (error.message.includes('Email not confirmed')) {
+                    signupError.textContent = 'Please check your email to confirm your account before logging in.';
                 } else {
-                    alert('Sign up failed: ' + error.message);
+                    signupError.textContent = `Sign up failed: ${error.message}`;
                 }
             }
-        });
-    }
+        }
+    });
+}
     // Handle logout
     if (logoutLink) {
         logoutLink.addEventListener('click', async (e) => {
