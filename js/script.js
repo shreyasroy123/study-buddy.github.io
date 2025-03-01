@@ -1,11 +1,29 @@
 // Store current user and time information
-const currentDateTime = '2025-03-01 10:18:07'; // UTC formatted time
+const currentDateTime = '2025-03-01 10:51:49'; // UTC formatted time
 const currentUserLogin = 'shreyasroy123';
 
-// Initialize Supabase client
-const supabaseUrl = 'https://zkirlipgjgbzjcmztfmi.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpraXJsaXBnamdiempjbXp0Zm1pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA4MDk2MzIsImV4cCI6MjA1NjM4NTYzMn0.wDWggmQxr-OiOw--tXzCgStB9s4CsVd3rAOPPcBX-Os';
-const supabase = supabaseJs.createClient(supabaseUrl, supabaseKey);
+// Initialize Supabase client with auth configuration
+const supabase = supabaseJs.createClient(
+    'https://zkirlipgjgbzjcmztfmi.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpraXJsaXBnamdiempjbXp0Zm1pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA4MDk2MzIsImV4cCI6MjA1NjM4NTYzMn0.wDWggmQxr-OiOw--tXzCgStB9s4CsVd3rAOPPcBX-Os'
+);
+
+// Get DOM elements
+const signupForm = document.getElementById('signup-form');
+const loginForm = document.getElementById('login-form');
+const signupError = document.getElementById('signup-error');
+const loginError = document.getElementById('login-error');
+const signupProfilePicInput = document.getElementById('signup-profile-pic');
+const signupPreviewImage = document.getElementById('signup-preview-image');
+
+// Check for authentication status changes
+supabase.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN') {
+        window.location.href = 'index.html';
+    } else if (event === 'SIGNED_OUT') {
+        window.location.href = 'login.html';
+    }
+});
 
 // Add CryptoJS password hashing functions
 function hashPassword(password) {
@@ -17,6 +35,7 @@ function verifyPassword(password, hash, salt) {
     const hashedAttempt = CryptoJS.SHA256(password + salt).toString();
     return hashedAttempt === hash;
 }
+
 
 document.addEventListener('DOMContentLoaded', function() {
     // UI Elements
@@ -48,10 +67,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check authentication status on page load
     checkAuthStatus();
     
+    
     // Fetch schools from Supabase (if on a page with school list)
     if (schoolList) {
         fetchSchools();
     }
+   
 // Handle login form submission
 if (loginForm) {
     loginForm.addEventListener('submit', async (e) => {
@@ -89,20 +110,42 @@ if (loginForm) {
         }
     });
 }
-    if (signupProfilePicInput && signupPreviewImage) {
-        signupProfilePicInput.addEventListener('change', () => {
-            const file = signupProfilePicInput.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    signupPreviewImage.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
+    // Add profile picture preview functionality
+if (signupProfilePicInput && signupPreviewImage) {
+    console.log('Setting up profile picture preview'); // Debug log
+    signupProfilePicInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            // Check if file is an image
+            if (!file.type.startsWith('image/')) {
+                alert('Please select an image file');
+                signupProfilePicInput.value = '';
+                signupPreviewImage.style.display = 'none';
+                return;
             }
-        });
-    }
 
-// Handle signup form submission
+            // Check file size (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('Image size should be less than 5MB');
+                signupProfilePicInput.value = '';
+                signupPreviewImage.style.display = 'none';
+                return;
+            }
+
+            // Create preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                signupPreviewImage.src = e.target.result;
+                signupPreviewImage.style.display = 'block';
+                console.log('Preview image displayed'); // Debug log
+            };
+            reader.readAsDataURL(file);
+        } else {
+            signupPreviewImage.style.display = 'none';
+        }
+    });
+}
+
 if (signupForm) {
     signupForm.addEventListener('submit', async (e) => {
         e.preventDefault();
@@ -134,7 +177,7 @@ if (signupForm) {
         try {
             // Step 1: Sign up the user
             const hashedPassword = hashPassword(password);
-            const { data: { user }, error: signUpError } = await supabase.auth.signUp({
+            const { data, error: signUpError } = await supabase.auth.signUp({
                 email,
                 password: hashedPassword,
                 options: {
@@ -146,7 +189,13 @@ if (signupForm) {
             });
             
             if (signUpError) throw signUpError;
-            if (!user) throw new Error('Signup failed - no user returned');
+            if (!data?.user) throw new Error('Signup failed - no user returned');
+
+            const user = data.user;
+            console.log('User created:', user.id); // Debug log
+
+            // Wait a moment for the auth user to be fully created
+            await new Promise(resolve => setTimeout(resolve, 1000));
 
             let avatarUrl = null;
             
@@ -182,35 +231,47 @@ if (signupForm) {
                 full_name: fullName,
                 phone,
                 created_at: currentDateTime,
-                password_hash: hashedPassword
+                password_hash: hashedPassword,
+                avatar_url: avatarUrl
             };
-            
-            if (avatarUrl) {
-                profileData.avatar_url = avatarUrl;
+
+            // Verify user exists in auth.users before creating profile
+            const { data: authUser, error: authCheckError } = await supabase
+                .from('auth.users')
+                .select('id')
+                .eq('id', user.id)
+                .single();
+
+            if (authCheckError) {
+                console.error('Auth user check failed:', authCheckError);
+                throw new Error('Failed to verify user creation. Please try again.');
             }
 
             const { error: profileError } = await supabase
                 .from('profiles')
-                .upsert([profileData], {
-                    onConflict: 'id',
-                    returning: 'minimal'
-                });
+                .insert([profileData])
+                .select()
+                .single();
             
             if (profileError) {
                 console.error('Profile creation error:', profileError);
                 throw profileError;
             }
             
-            // Show success message with email confirmation instructions
-            alert('Sign up successful! Please check your email to confirm your account before logging in.');
+            // Show success message
+            const message = 'Sign up successful! Please:\n\n' +
+                '1. Check your email inbox (and spam folder) for the confirmation link\n' +
+                '2. Click the link to verify your account\n' +
+                '3. After confirmation, you can log in to your account';
+            alert(message);
+            
             window.location.href = 'login.html';
             
         } catch (error) {
             console.error('Signup error:', error);
             if (signupError) {
-                // Handle specific error cases
-                if (error.message.includes('Email not confirmed')) {
-                    signupError.textContent = 'Please check your email to confirm your account before logging in.';
+                if (error.message.includes('foreign key constraint')) {
+                    signupError.textContent = 'Account creation in progress. Please try again in a few moments.';
                 } else {
                     signupError.textContent = `Sign up failed: ${error.message}`;
                 }
@@ -218,6 +279,9 @@ if (signupForm) {
         }
     });
 }
+
+
+    
     // Handle logout
     if (logoutLink) {
         logoutLink.addEventListener('click', async (e) => {
