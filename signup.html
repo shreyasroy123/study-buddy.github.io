@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NotesBuddy - Sign Up</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/auth.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">
+                <a href="index.html">NotesBuddy</a>
+            </div>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="login.html">Log in</a></li>
+                <li><a href="signup.html" class="active">Sign up</a></li>
+            </ul>
+        </nav>
+    </header>
+    
+    <main>
+        <div class="auth-container">
+            <div class="auth-form-container">
+                <h1>Create Account</h1>
+                <p class="auth-subtitle">Join our learning community today</p>
+                
+                <div class="auth-form">
+                    <form id="signup-form">
+                        <div class="form-group">
+                            <label for="signup-name"><i class="fas fa-user"></i> Full Name</label>
+                            <input type="text" id="signup-name" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="signup-email"><i class="fas fa-envelope"></i> Email</label>
+                            <input type="email" id="signup-email" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="signup-phone"><i class="fas fa-phone"></i> Phone Number</label>
+                            <input type="tel" id="signup-phone" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="signup-password"><i class="fas fa-lock"></i> Password</label>
+                            <input type="password" id="signup-password" required>
+                            <div class="password-toggle" onclick="togglePasswordVisibility('signup-password')">
+                                <i class="far fa-eye"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="password-requirements">
+                            <p>Password must contain:</p>
+                            <ul>
+                                <li id="length-check">At least 8 characters</li>
+                                <li id="uppercase-check">At least one uppercase letter</li>
+                                <li id="lowercase-check">At least one lowercase letter</li>
+                                <li id="number-check">At least one number</li>
+                                <li id="special-check">At least one special character</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="signup-confirm-password"><i class="fas fa-lock"></i> Confirm Password</label>
+                            <input type="password" id="signup-confirm-password" required>
+                            <div class="password-toggle" onclick="togglePasswordVisibility('signup-confirm-password')">
+                                <i class="far fa-eye"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="profile-picture"><i class="fas fa-camera"></i> Profile Picture</label>
+                            <div class="file-upload">
+                                <input type="file" id="profile-picture" accept="image/*" required>
+                                <div class="upload-preview">
+                                    <img id="preview-image" src="img/placeholder-profile.png" alt="Profile Preview">
+                                    <div class="upload-label">
+                                        <i class="fas fa-upload"></i> Choose a file
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group terms">
+                            <input type="checkbox" id="terms" required>
+                            <label for="terms">I agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></label>
+                        </div>
+                        
+                        <div class="form-group">
+                            <button type="submit" class="auth-btn">Create Account</button>
+                        </div>
+                        
+                        <div class="auth-divider">
+                            <span>OR</span>
+                        </div>
+                        
+                        <div class="social-login">
+                            <button type="button" class="social-btn google"><i class="fab fa-google"></i> Continue with Google</button>
+                        </div>
+                        
+                        <div class="auth-redirect">
+                            <p>Already have an account? <a href="login.html">Log in</a></p>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="auth-image">
+                <img src="img/signup-illustration.svg" alt="Signup Illustration">
+            </div>
+        </div>
+    </main>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/auth.js"></script>
+    <script>
+        function togglePasswordVisibility(inputId) {
+            const passwordInput = document.getElementById(inputId);
+            const eyeIcon = passwordInput.nextElementSibling.querySelector('i');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                eyeIcon.classList.remove('fa-eye');
+                eyeIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                eyeIcon.classList.remove('fa-eye-slash');
+                eyeIcon.classList.add('fa-eye');
+            }
+        }
+        
+        // Profile picture preview
+        document.getElementById('profile-picture').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('preview-image').src = e.target.result;
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        // Password validation
+        document.getElementById('signup-password').addEventListener('input', function() {
+            const password = this.value;
+            
+            // Check length
+            if (password.length >= 8) {
+                document.getElementById('length-check').classList.add('valid');
+            } else {
+                document.getElementById('length-check').classList.remove('valid');
+            }
+            
+            // Check uppercase
+            if (/[A-Z]/.test(password)) {
+                document.getElementById('uppercase-check').classList.add('valid');
+            } else {
+                document.getElementById('uppercase-check').classList.remove('valid');
+            }
+            
+            // Check lowercase
+            if (/[a-z]/.test(password)) {
+                document.getElementById('lowercase-check').classList.add('valid');
+            } else {
+                document.getElementById('lowercase-check').classList.remove('valid');
+            }
+            
+            // Check number
+            if (/[0-9]/.test(password)) {
+                document.getElementById('number-check').classList.add('valid');
+            } else {
+                document.getElementById('number-check').classList.remove('valid');
+            }
+            
+            // Check special character
+            if (/[^A-Za-z0-9]/.test(password)) {
+                document.getElementById('special-check').classList.add('valid');
+            } else {
+                document.getElementById('special-check').classList.remove('valid');
+            }
+        });
+    </script>
+</body>
+</html>

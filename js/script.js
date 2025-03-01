@@ -1,44 +1,76 @@
-// filepath: /notes-buddy/notes-buddy/src/js/script.js
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Supabase client
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    
+    // Get references to elements
     const schoolList = document.getElementById('school-list');
     
     // Fetch schools from Supabase
     async function fetchSchools() {
-        const response = await fetch('https://your-supabase-url/rest/v1/schools', {
-            method: 'GET',
-            headers: {
-                'apikey': 'your-supabase-api-key',
-                'Authorization': 'Bearer your-supabase-jwt',
-                'Content-Type': 'application/json'
-            }
-        });
+        const { data, error } = await supabase
+            .from('schools')
+            .select('*')
+            .order('name', { ascending: true });
         
-        if (response.ok) {
-            const schools = await response.json();
-            displaySchools(schools);
+        if (error) {
+            console.error('Error fetching schools:', error.message);
+            return;
+        }
+        
+        if (data && data.length > 0) {
+            displaySchools(data);
         } else {
-            console.error('Error fetching schools:', response.statusText);
+            if (schoolList) {
+                schoolList.innerHTML = '<p class="no-data">No schools found. Please check back later.</p>';
+            }
         }
     }
 
     // Display schools in the list
     function displaySchools(schools) {
+        if (!schoolList) return;
+        
+        schoolList.innerHTML = '';
+        
         schools.forEach(school => {
             const li = document.createElement('li');
-            li.textContent = school.name; // Assuming the school object has a 'name' property
+            li.innerHTML = `
+                <h3>${school.name}</h3>
+                <p>${school.description || 'No description available'}</p>
+                <a href="school.html?id=${school.id}" class="view-school-btn">View Resources</a>
+            `;
             schoolList.appendChild(li);
         });
     }
 
-    // Handle navigation
-    document.getElementById('login-link').addEventListener('click', function() {
-        window.location.href = 'accounts.html';
-    });
+    // Toggle mobile menu
+    const menuToggle = document.querySelector('.menu-toggle');
+    if (menuToggle) {
+        menuToggle.addEventListener('click', function() {
+            document.getElementById('nav-links').classList.toggle('active');
+        });
+    }
 
-    document.getElementById('signup-link').addEventListener('click', function() {
-        window.location.href = 'accounts.html';
-    });
+    // Check if user profile dropdown exists and initialize it
+    const profileDropdown = document.querySelector('.profile-dropdown');
+    if (profileDropdown) {
+        profileDropdown.addEventListener('click', function(event) {
+            const dropdownMenu = this.querySelector('.dropdown-menu');
+            dropdownMenu.classList.toggle('active');
+            event.stopPropagation();
+        });
 
-    // Initial fetch of schools
-    fetchSchools();
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function() {
+            const dropdownMenu = profileDropdown.querySelector('.dropdown-menu');
+            if (dropdownMenu.classList.contains('active')) {
+                dropdownMenu.classList.remove('active');
+            }
+        });
+    }
+
+    // Initial fetch of schools if on the home page
+    if (schoolList) {
+        fetchSchools();
+    }
 });
