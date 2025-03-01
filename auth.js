@@ -1,7 +1,9 @@
 // Supabase Configuration
 const SUPABASE_URL = 'https://irqmhamkeytbiobbraxh.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlycW1oYW1rZXl0YmlvYmJyYXhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA4NTAxMjYsImV4cCI6MjA1NjQyNjEyNn0.nnSRe3Z1BiZjSOIgOzg3I8zv7TtUmei-bPAELw7eEl8';
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 // DOM Elements - Shared
 const togglePasswordElements = document.querySelectorAll('.toggle-password');
 
@@ -35,7 +37,7 @@ if (loginForm) {
             submitBtn.disabled = true;
             
             // Sign in with Supabase
-            const { data, error } = await supabase.auth.signInWithPassword({
+            const { data, error } = await supabaseClient.auth.signInWithPassword({
                 email,
                 password
             });
@@ -107,7 +109,7 @@ if (signupForm) {
             submitBtn.disabled = true;
             
             // 1. Sign up the user with Supabase Auth
-            const { data: { user }, error: signUpError } = await supabase.auth.signUp({
+            const { data: { user }, error: signUpError } = await supabaseClient.auth.signUp({
                 email,
                 password,
                 options: {
@@ -126,14 +128,14 @@ if (signupForm) {
             if (avatar) {
                 const fileExt = avatar.name.split('.').pop();
                 const fileName = `${user.id}.${fileExt}`;
-                const { data: uploadData, error: uploadError } = await supabase.storage
+                const { data: uploadData, error: uploadError } = await supabaseClient.storage
                     .from('avatars')
                     .upload(fileName, avatar);
                 
                 if (uploadError) throw uploadError;
                 
                 // Get public URL
-                const { data: { publicUrl } } = supabase.storage
+                const { data: { publicUrl } } = supabaseClient.storage
                     .from('avatars')
                     .getPublicUrl(fileName);
                 
@@ -141,7 +143,7 @@ if (signupForm) {
             }
             
             // 3. Insert user profile data
-            const { error: profileError } = await supabase
+            const { error: profileError } = await supabaseClient
                 .from('profiles')
                 .insert([
                     { 
