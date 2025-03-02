@@ -120,17 +120,26 @@ if (signupForm) {
             submitBtn.textContent = 'Creating Account...';
             submitBtn.disabled = true;
             
-            // 1. Sign up the user with Supabase Auth
+            // Store form data in localStorage for later use after email verification
+            const userData = {
+                fullName: fullName,
+                phone: phone,
+                hasAvatar: !!avatar
+            };
+            localStorage.setItem('pendingUserData', JSON.stringify(userData));
+            
+            // Sign up the user with Supabase Auth
             const { data: authData, error: signUpError } = await supabaseClient.auth.signUp({
                 email,
                 password,
-                options: {
-                    data: {
-                        full_name: fullName,
-                        phone: phone
-                    },
-                    emailRedirectTo: 'https://notesbuddy-gnr.netlify.app/login'
-                }
+                // In your signUp call:
+options: {
+    data: {
+        full_name: fullName,
+        phone: phone
+    },
+    emailRedirectTo: 'https://notesbuddy-gnr.netlify.app/complete-profile.html'
+}
             });
             
             if (signUpError) throw signUpError;
@@ -139,12 +148,11 @@ if (signupForm) {
                 throw new Error('User creation failed');
             }
             
-            // Store user data temporarily
             const userId = authData.user.id;
             console.log('User created with ID:', userId);
+            localStorage.setItem('pendingUserId', userId);
             
             // Upload avatar if provided
-            let avatarUrl = null;
             if (avatar) {
                 try {
                     const fileExt = avatar.name.split('.').pop();
@@ -162,65 +170,16 @@ if (signupForm) {
                             .from('avatars')
                             .getPublicUrl(fileName);
                         
-                        avatarUrl = publicUrl;
-                        console.log('Avatar uploaded successfully:', avatarUrl);
+                        localStorage.setItem('pendingAvatarUrl', publicUrl);
+                        console.log('Avatar uploaded successfully:', publicUrl);
                     }
                 } catch (avatarError) {
                     console.warn('Error uploading avatar:', avatarError);
-                    // Continue with signup even if avatar upload fails
                 }
-            }
-            
-            // KEY CHANGE: Add a delay before creating profile to avoid foreign key error
-            console.log('Waiting for user record to be fully created...');
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            
-            // Now try to create the profile
-            try {
-                const { error: profileError } = await supabaseClient
-                    .from('profiles')
-                    .insert([
-                        { 
-                            id: userId,
-                            full_name: fullName,
-                            phone: phone,
-                            avatar_url: avatarUrl
-                        }
-                    ]);
-                
-                if (profileError) {
-                    console.error('First profile creation attempt failed:', profileError);
-                    
-                    // Wait a bit longer and try again
-                    await new Promise(resolve => setTimeout(resolve, 3000));
-                    
-                    const { error: retryError } = await supabaseClient
-                        .from('profiles')
-                        .insert([
-                            { 
-                                id: userId,
-                                full_name: fullName,
-                                phone: phone,
-                                avatar_url: avatarUrl
-                            }
-                        ]);
-                    
-                    if (retryError) {
-                        console.error('Retry profile creation failed:', retryError);
-                        throw retryError;
-                    } else {
-                        console.log('Profile created successfully on second attempt');
-                    }
-                } else {
-                    console.log('Profile created successfully');
-                }
-            } catch (profileError) {
-                console.error('Error creating user profile:', profileError);
-                throw profileError;
             }
             
             // Show success message
-            alert('Account created successfully! Please check your email to verify your account.');
+            alert('Account created successfully! Please check your email to verify your account before logging in.');
             window.location.href = 'login.html';
             
         } catch (error) {
@@ -257,9 +216,7 @@ async function checkProfileCreation(userId) {
     }
 }
 
-// Call this after successful signup
-// In the signup handler:
-await check
+
 // Mobile menu toggle
 function showMenu() {
     const navLinks = document.getElementById('navLinks');
