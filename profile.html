@@ -33,7 +33,7 @@
                 <a href="signup.html" class="btn">Sign Up</a>
             </div>
             
-            <!-- User profile (displayed when user is logged in) -->
+            <!-- User profile with fixed dropdown position -->
             <div class="user-profile" id="userProfile" style="display:none;">
                 <img src="images/default-avatar.png" alt="User" id="profilePic">
                 <span id="userName">User</span>
@@ -118,43 +118,10 @@
 
             <div class="tab-content" id="study-stats" style="display:none;">
                 <h3>Study Statistics</h3>
-                <div class="stats-container">
-                    <div class="stat-card">
-                        <div class="stat-icon"><i class="fas fa-book"></i></div>
-                        <div class="stat-value" id="notesCount">0</div>
-                        <div class="stat-label">Notes Created</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon"><i class="fas fa-clock"></i></div>
-                        <div class="stat-value" id="studyHours">0</div>
-                        <div class="stat-label">Study Hours</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon"><i class="fas fa-tasks"></i></div>
-                        <div class="stat-value" id="completedTasks">0</div>
-                        <div class="stat-label">Tasks Completed</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon"><i class="fas fa-star"></i></div>
-                        <div class="stat-value" id="achievements">0</div>
-                        <div class="stat-label">Achievements</div>
-                    </div>
-                </div>
-
-                <div class="activity-chart">
-                    <h4>Recent Activity</h4>
-                    <div class="chart-container">
-                        <div id="activityChart">
-                            <p class="placeholder-text">Activity data will be displayed here once you start using NotesBuddy regularly.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="subject-progress">
-                    <h4>Progress by Subject</h4>
-                    <div class="progress-container" id="subjectProgress">
-                        <p class="placeholder-text">Add subjects to track your progress in each area.</p>
-                    </div>
+                <div class="under-construction">
+                    <i class="fas fa-hard-hat"></i>
+                    <h4>Under Construction</h4>
+                    <p>This feature is coming soon! We're working hard to provide you with detailed statistics about your study habits.</p>
                 </div>
             </div>
 
@@ -167,14 +134,23 @@
                         <div class="form-group">
                             <label for="currentPassword">Current Password</label>
                             <input type="password" id="currentPassword" name="currentPassword" required>
+                            <span class="toggle-password fa fa-eye-slash"></span>
                         </div>
                         <div class="form-group">
                             <label for="newPassword">New Password</label>
                             <input type="password" id="newPassword" name="newPassword" required>
+                            <span class="toggle-password fa fa-eye-slash"></span>
+                            <div class="password-strength">
+                                <div class="strength-bar">
+                                    <div class="strength-level" id="strengthLevel"></div>
+                                </div>
+                                <div class="strength-text" id="strengthText">Password strength</div>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label for="confirmPassword">Confirm New Password</label>
                             <input type="password" id="confirmPassword" name="confirmPassword" required>
+                            <span class="toggle-password fa fa-eye-slash"></span>
                         </div>
                         <div class="form-group">
                             <button type="submit" class="btn btn-primary">Update Password</button>
@@ -204,13 +180,85 @@
                     </div>
                     <button id="saveNotificationSettings" class="btn btn-secondary">Save Notification Settings</button>
                 </div>
+                
+                <div class="settings-section">
+                    <h4>Security</h4>
+                    <div class="security-options">
+                        <div class="setting-item">
+                            <div>
+                                <h5>Two-Factor Authentication</h5>
+                                <p>Add an extra layer of security to your account</p>
+                            </div>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="twoFactorAuth" class="toggle-input">
+                                <label for="twoFactorAuth" class="toggle-label"></label>
+                            </div>
+                        </div>
+                        <div class="setting-item">
+                            <div>
+                                <h5>Login History</h5>
+                                <p>View your recent login activity</p>
+                            </div>
+                            <button id="viewLoginHistory" class="btn btn-secondary">View History</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h4>Privacy</h4>
+                    <div class="privacy-options">
+                        <div class="setting-item">
+                            <div>
+                                <h5>Profile Visibility</h5>
+                                <p>Control who can see your profile</p>
+                            </div>
+                            <select id="profileVisibility" class="form-select">
+                                <option value="public">Public</option>
+                                <option value="friends">Friends Only</option>
+                                <option value="private">Private</option>
+                            </select>
+                        </div>
+                        <div class="setting-item">
+                            <div>
+                                <h5>Notes Visibility</h5>
+                                <p>Default visibility for your notes</p>
+                            </div>
+                            <select id="notesVisibility" class="form-select">
+                                <option value="public">Public</option>
+                                <option value="friends">Friends Only</option>
+                                <option value="private">Private</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button id="savePrivacySettings" class="btn btn-secondary">Save Privacy Settings</button>
+                </div>
+
+                <div class="settings-section">
+                    <h4>Connected Accounts</h4>
+                    <div class="connected-accounts">
+                        <div class="setting-item">
+                            <div>
+                                <h5>Google</h5>
+                                <p id="googleConnectionStatus">Not connected</p>
+                            </div>
+                            <button id="connectGoogle" class="btn btn-secondary">Connect</button>
+                        </div>
+                        <div class="setting-item">
+                            <div>
+                                <h5>Microsoft</h5>
+                                <p id="microsoftConnectionStatus">Not connected</p>
+                            </div>
+                            <button id="connectMicrosoft" class="btn btn-secondary">Connect</button>
+                        </div>
+                    </div>
+                </div>
 
                 <div class="settings-section danger-zone">
                     <h4>Danger Zone</h4>
                     <div class="danger-action">
                         <div>
                             <h5>Delete Account</h5>
-                            <p>Once you delete your account, there is no going back. Please be certain.</p>
+                            <p>Once you delete your account, all of your data will be permanently removed. This action cannot be undone.</p>
                         </div>
                         <button id="deleteAccount" class="btn btn-danger">Delete Account</button>
                     </div>
@@ -239,6 +287,29 @@
         </div>
     </div>
 
+    <!-- Login History Modal -->
+    <div id="loginHistoryModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>Login History</h3>
+            <div class="login-history-container">
+                <table class="login-history-table">
+                    <thead>
+                        <tr>
+                            <th>Date & Time</th>
+                            <th>Device</th>
+                            <th>IP Address</th>
+                            <th>Location</th>
+                        </tr>
+                    </thead>
+                    <tbody id="loginHistoryTable">
+                        <!-- Login history entries will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
     <!-- Footer -->
     <section class="footer">
         <h4>About Us</h4>
@@ -249,7 +320,7 @@
             <i class="fab fa-instagram"></i>
             <i class="fab fa-linkedin"></i>
         </div>
-        <p class="copyright">© 2023 NotesBuddy. All Rights Reserved.</p>
+        <p class="copyright" id="copyrightYear">© 2023 NotesBuddy. All Rights Reserved.</p>
     </section>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
