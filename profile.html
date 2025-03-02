@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile | NotesBuddy</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="profile-styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+</head>
+<body>
+    <!-- Header Section -->
+    <section class="sub-header">
+        <nav>
+            <a href="index.html" class="logo">NotesBuddy</a>
+            <div class="nav-links" id="navLinks">
+                <i class="fa fa-times" onclick="hideMenu()"></i>
+                <ul>
+                    <li><a href="index.html">HOME</a></li>
+                    <li><a href="schools.html">SCHOOLS</a></li>
+                    <li><a href="subjects.html">SUBJECTS</a></li>
+                    <li><a href="study-materials.html">STUDY MATERIALS</a></li>
+                    <li><a href="about.html">ABOUT</a></li>
+                    <li><a href="contact.html">CONTACT</a></li>
+                </ul>
+            </div>
+            <i class="fa fa-bars" onclick="showMenu()"></i>
+            
+            <!-- Auth buttons (displayed when user is not logged in) -->
+            <div class="auth-buttons" id="authButtons">
+                <a href="login.html" class="btn">Log In</a>
+                <a href="signup.html" class="btn">Sign Up</a>
+            </div>
+            
+            <!-- User profile (displayed when user is logged in) -->
+            <div class="user-profile" id="userProfile" style="display:none;">
+                <img src="images/default-avatar.png" alt="User" id="profilePic">
+                <span id="userName">User</span>
+                <div class="profile-dropdown">
+                    <a href="profile.html">My Profile</a>
+                    <a href="my-notes.html">My Notes</a>
+                    <a href="my-calendar.html">Study Calendar</a>
+                    <a href="#" id="logoutBtn">Logout</a>
+                </div>
+            </div>
+        </nav>
+        <h1>My Profile</h1>
+    </section>
+
+    <!-- Profile Content -->
+    <section class="profile-container">
+        <div class="profile-header">
+            <div class="profile-avatar-container">
+                <div class="profile-avatar">
+                    <img src="images/default-avatar.png" id="largeProfilePic" alt="Profile Picture">
+                    <div class="avatar-overlay">
+                        <i class="fas fa-camera"></i>
+                        <span>Change Photo</span>
+                    </div>
+                </div>
+            </div>
+            <h2 id="profileName">Loading...</h2>
+            <p id="memberSince">Member since: Loading...</p>
+        </div>
+
+        <div class="profile-content">
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="personal-info">Personal Info</button>
+                <button class="tab-btn" data-tab="study-stats">Study Statistics</button>
+                <button class="tab-btn" data-tab="account-settings">Account Settings</button>
+            </div>
+
+            <div class="tab-content" id="personal-info">
+                <h3>Personal Information</h3>
+                <form id="profileForm">
+                    <div class="form-group">
+                        <label for="editFullName">Full Name</label>
+                        <input type="text" id="editFullName" name="fullName" placeholder="Your full name">
+                    </div>
+                    <div class="form-group">
+                        <label for="editEmail">Email (cannot be changed)</label>
+                        <input type="email" id="editEmail" name="email" disabled>
+                    </div>
+                    <div class="form-group">
+                        <label for="editPhone">Phone</label>
+                        <input type="tel" id="editPhone" name="phone" placeholder="Your phone number">
+                    </div>
+                    <div class="form-group">
+                        <label for="editSchool">School/University</label>
+                        <input type="text" id="editSchool" name="school" placeholder="Your school or university">
+                    </div>
+                    <div class="form-group">
+                        <label for="editGrade">Grade/Year</label>
+                        <select id="editGrade" name="grade">
+                            <option value="">Select your grade/year</option>
+                            <option value="high_school_9">High School - 9th Grade</option>
+                            <option value="high_school_10">High School - 10th Grade</option>
+                            <option value="high_school_11">High School - 11th Grade</option>
+                            <option value="high_school_12">High School - 12th Grade</option>
+                            <option value="university_1">University - 1st Year</option>
+                            <option value="university_2">University - 2nd Year</option>
+                            <option value="university_3">University - 3rd Year</option>
+                            <option value="university_4">University - 4th Year</option>
+                            <option value="graduate">Graduate Student</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="editBio">Bio</label>
+                        <textarea id="editBio" name="bio" rows="4" placeholder="Tell us about yourself..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="tab-content" id="study-stats" style="display:none;">
+                <h3>Study Statistics</h3>
+                <div class="stats-container">
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-book"></i></div>
+                        <div class="stat-value" id="notesCount">0</div>
+                        <div class="stat-label">Notes Created</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                        <div class="stat-value" id="studyHours">0</div>
+                        <div class="stat-label">Study Hours</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-tasks"></i></div>
+                        <div class="stat-value" id="completedTasks">0</div>
+                        <div class="stat-label">Tasks Completed</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon"><i class="fas fa-star"></i></div>
+                        <div class="stat-value" id="achievements">0</div>
+                        <div class="stat-label">Achievements</div>
+                    </div>
+                </div>
+
+                <div class="activity-chart">
+                    <h4>Recent Activity</h4>
+                    <div class="chart-container">
+                        <div id="activityChart">
+                            <p class="placeholder-text">Activity data will be displayed here once you start using NotesBuddy regularly.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="subject-progress">
+                    <h4>Progress by Subject</h4>
+                    <div class="progress-container" id="subjectProgress">
+                        <p class="placeholder-text">Add subjects to track your progress in each area.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="account-settings" style="display:none;">
+                <h3>Account Settings</h3>
+                
+                <div class="settings-section">
+                    <h4>Change Password</h4>
+                    <form id="passwordForm">
+                        <div class="form-group">
+                            <label for="currentPassword">Current Password</label>
+                            <input type="password" id="currentPassword" name="currentPassword" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="newPassword">New Password</label>
+                            <input type="password" id="newPassword" name="newPassword" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="confirmPassword">Confirm New Password</label>
+                            <input type="password" id="confirmPassword" name="confirmPassword" required>
+                        </div>
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">Update Password</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="settings-section">
+                    <h4>Email Notifications</h4>
+                    <div class="notification-settings">
+                        <div class="notification-option">
+                            <input type="checkbox" id="notifyStudyReminders" checked>
+                            <label for="notifyStudyReminders">Study Reminders</label>
+                        </div>
+                        <div class="notification-option">
+                            <input type="checkbox" id="notifyNewFeatures" checked>
+                            <label for="notifyNewFeatures">New Features</label>
+                        </div>
+                        <div class="notification-option">
+                            <input type="checkbox" id="notifyComments">
+                            <label for="notifyComments">Comments on my Notes</label>
+                        </div>
+                        <div class="notification-option">
+                            <input type="checkbox" id="notifyUpdates" checked>
+                            <label for="notifyUpdates">Platform Updates</label>
+                        </div>
+                    </div>
+                    <button id="saveNotificationSettings" class="btn btn-secondary">Save Notification Settings</button>
+                </div>
+
+                <div class="settings-section danger-zone">
+                    <h4>Danger Zone</h4>
+                    <div class="danger-action">
+                        <div>
+                            <h5>Delete Account</h5>
+                            <p>Once you delete your account, there is no going back. Please be certain.</p>
+                        </div>
+                        <button id="deleteAccount" class="btn btn-danger">Delete Account</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Upload Avatar Modal -->
+    <div id="avatarModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>Upload Profile Picture</h3>
+            <form id="avatarForm">
+                <div class="avatar-preview">
+                    <img id="avatarPreview" src="images/default-avatar.png" alt="Avatar Preview">
+                </div>
+                <div class="form-group">
+                    <label for="avatarInput">Select an image:</label>
+                    <input type="file" id="avatarInput" name="avatar" accept="image/*">
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary">Upload</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <section class="footer">
+        <h4>About Us</h4>
+        <p>NotesBuddy is your one-stop solution for all your educational needs. <br>We're here to make studying easier and more effective.</p>
+        <div class="icons">
+            <i class="fab fa-facebook"></i>
+            <i class="fab fa-twitter"></i>
+            <i class="fab fa-instagram"></i>
+            <i class="fab fa-linkedin"></i>
+        </div>
+        <p class="copyright">© 2023 NotesBuddy. All Rights Reserved.</p>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="app.js"></script>
+    <script src="profile.js"></script>
+</body>
+</html>
