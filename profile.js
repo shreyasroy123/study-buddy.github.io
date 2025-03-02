@@ -18,6 +18,7 @@ if (typeof window.supabase !== 'undefined') {
     console.error("Supabase client not available. Make sure to include the Supabase JS library.");
 }
 
+// Profile page initialization
 (function() {
     // Current page detection
     const currentPage = window.location.pathname.split('/').pop();
@@ -40,22 +41,12 @@ if (typeof window.supabase !== 'undefined') {
     document.addEventListener('DOMContentLoaded', initializePage);
 
     function initializePage() {
-        // Check if logged in via app.js global variable if available
-        if (typeof window.isLoggedIn === 'undefined' || !window.isLoggedIn) {
-            // If not logged in or status unknown, redirect to login
-            window.location.href = 'login.html';
-            return;
-        }
-
-        // Get user data from localStorage if available
+        // Ensure user data exists
+        ensureUserData();
+        
+        // Get user data from localStorage
         const userData = getUserFromLocalStorage();
         
-        if (!userData) {
-            // No stored user data, redirect to login
-            window.location.href = 'login.html';
-            return;
-        }
-
         // Update navbar
         updateNavbar(userData);
         
@@ -68,6 +59,28 @@ if (typeof window.supabase !== 'undefined') {
         
         // Set up logout button
         setupLogoutButton();
+    }
+    
+    // Ensure user data exists in localStorage
+    function ensureUserData() {
+        if (!localStorage.getItem('userData')) {
+            const demoUser = {
+                email: 'shreyasroy123@example.com', // Using the login you provided
+                name: '',
+                createdAt: '2025-03-02T18:53:40Z', // Using the exact timestamp you provided
+                notifications: {
+                    studyReminders: true,
+                    newFeatures: true,
+                    comments: false,
+                    updates: true
+                },
+                privacy: {
+                    profileVisibility: 'public',
+                    notesVisibility: 'friends'
+                }
+            };
+            localStorage.setItem('userData', JSON.stringify(demoUser));
+        }
     }
 
     // Get user data from localStorage
@@ -90,55 +103,79 @@ if (typeof window.supabase !== 'undefined') {
         if (userProfile) userProfile.style.display = 'flex';
         
         // Update username in navbar
-        if (userName) {
+        if (userName && userData) {
             userName.textContent = userData.name || userData.email.split('@')[0];
         }
         
         // Update profile pic in navbar - use initial letter if no image
-        if (profilePic) {
+        if (profilePic && userData) {
             if (userData.avatarUrl) {
-                profilePic.src = userData.avatarUrl;
+                // Convert div to img
+                const parentElement = profilePic.parentElement;
+                const newImg = document.createElement('img');
+                newImg.id = 'profilePic';
+                newImg.src = userData.avatarUrl;
+                newImg.alt = 'User';
+                newImg.style.width = '35px';
+                newImg.style.height = '35px';
+                newImg.style.borderRadius = '50%';
+                newImg.style.marginRight = '10px';
+                newImg.style.objectFit = 'cover';
+                
+                // Replace div with img
+                if (parentElement) {
+                    parentElement.replaceChild(newImg, profilePic);
+                    profilePic = newImg;
+                }
+                
+                // Add error handler
                 profilePic.onerror = () => {
-                    // If image fails to load, use text avatar
                     setTextAvatar(profilePic, userData.name || userData.email[0]);
                 };
             } else {
-                // Use text avatar if no image URL
+                // Use text avatar with initial
                 setTextAvatar(profilePic, userData.name || userData.email[0]);
             }
         }
     }
 
     // Create a text-based avatar with user's initial
-    function setTextAvatar(imgElement, name) {
+    function setTextAvatar(element, name) {
         // Get first letter for avatar
         const firstLetter = name.charAt(0).toUpperCase();
         
-        // Create canvas for text avatar
-        const canvas = document.createElement('canvas');
-        canvas.width = 200;
-        canvas.height = 200;
-        
-        const context = canvas.getContext('2d');
-        
-        // Background color based on name (simple hash)
+        if (element.tagName === 'IMG') {
+            // Convert img to div
+            const parentElement = element.parentElement;
+            const newDiv = document.createElement('div');
+            newDiv.id = element.id;
+            newDiv.style.width = '35px';
+            newDiv.style.height = '35px';
+            newDiv.style.borderRadius = '50%';
+            newDiv.style.backgroundColor = getColorForLetter(firstLetter);
+            newDiv.style.color = 'white';
+            newDiv.style.display = 'flex';
+            newDiv.style.alignItems = 'center';
+            newDiv.style.justifyContent = 'center';
+            newDiv.style.marginRight = '10px';
+            newDiv.style.fontWeight = 'bold';
+            newDiv.textContent = firstLetter;
+            
+            if (parentElement) {
+                parentElement.replaceChild(newDiv, element);
+            }
+        } else {
+            // Just update the div
+            element.style.backgroundColor = getColorForLetter(firstLetter);
+            element.textContent = firstLetter;
+        }
+    }
+    
+    // Get color based on letter
+    function getColorForLetter(letter) {
         const colors = ['#4285F4', '#DB4437', '#F4B400', '#0F9D58', '#9C27B0', '#3F51B5', '#FF5722'];
-        const colorIndex = Math.abs(name.charCodeAt(0)) % colors.length;
-        const bgColor = colors[colorIndex];
-        
-        // Fill background
-        context.fillStyle = bgColor;
-        context.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // Draw text
-        context.font = 'bold 100px Arial';
-        context.fillStyle = '#FFFFFF';
-        context.textAlign = 'center';
-        context.textBaseline = 'middle';
-        context.fillText(firstLetter, canvas.width / 2, canvas.height / 2);
-        
-        // Set the image source to the canvas data URL
-        imgElement.src = canvas.toDataURL('image/png');
+        const index = letter.charCodeAt(0) % colors.length;
+        return colors[index];
     }
 
     // Initialize profile page
@@ -149,7 +186,7 @@ if (typeof window.supabase !== 'undefined') {
         profileName.textContent = userData.name || userData.email.split('@')[0];
         
         // Set membership date
-        const createdAt = new Date(userData.createdAt || new Date());
+        const createdAt = new Date(userData.createdAt);
         const formattedDate = createdAt.toLocaleDateString('en-US', { 
             year: 'numeric', 
             month: 'long', 
@@ -159,14 +196,35 @@ if (typeof window.supabase !== 'undefined') {
         
         // Set large profile picture
         if (userData.avatarUrl) {
-            largeProfilePic.src = userData.avatarUrl;
-            largeProfilePic.onerror = () => {
-                // If image fails to load, use text avatar
-                setTextAvatar(largeProfilePic, userData.name || userData.email[0]);
-            };
+            // If we have an actual image URL
+            if (largeProfilePic.tagName !== 'IMG') {
+                // Convert div to img
+                const parentElement = largeProfilePic.parentElement;
+                const newImg = document.createElement('img');
+                newImg.id = 'largeProfilePic';
+                newImg.src = userData.avatarUrl;
+                newImg.alt = 'Profile Picture';
+                newImg.style.width = '100%';
+                newImg.style.height = '100%';
+                newImg.style.objectFit = 'cover';
+                
+                if (parentElement) {
+                    parentElement.replaceChild(newImg, largeProfilePic);
+                    largeProfilePic = newImg;
+                }
+                
+                largeProfilePic.onerror = () => {
+                    setLargeTextAvatar(userData.name || userData.email[0]);
+                };
+            } else {
+                largeProfilePic.src = userData.avatarUrl;
+                largeProfilePic.onerror = () => {
+                    setLargeTextAvatar(userData.name || userData.email[0]);
+                };
+            }
         } else {
-            // Use text avatar if no image URL
-            setTextAvatar(largeProfilePic, userData.name || userData.email[0]);
+            // Use text avatar
+            setLargeTextAvatar(userData.name || userData.email[0]);
         }
         
         // Populate form if it exists
@@ -174,6 +232,40 @@ if (typeof window.supabase !== 'undefined') {
         
         // Initialize avatar modal
         initAvatarModal();
+    }
+    
+    // Create a large text avatar
+    function setLargeTextAvatar(name) {
+        const firstLetter = name.charAt(0).toUpperCase();
+        
+        if (!largeProfilePic) return;
+        
+        if (largeProfilePic.tagName === 'IMG') {
+            // Convert img to div
+            const parentElement = largeProfilePic.parentElement;
+            const newDiv = document.createElement('div');
+            newDiv.id = 'largeProfilePic';
+            newDiv.style.width = '100%';
+            newDiv.style.height = '100%';
+            newDiv.style.borderRadius = '50%';
+            newDiv.style.backgroundColor = getColorForLetter(firstLetter);
+            newDiv.style.color = 'white';
+            newDiv.style.display = 'flex';
+            newDiv.style.alignItems = 'center';
+            newDiv.style.justifyContent = 'center';
+            newDiv.style.fontSize = '4rem';
+            newDiv.style.fontWeight = 'bold';
+            newDiv.textContent = firstLetter;
+            
+            if (parentElement) {
+                parentElement.replaceChild(newDiv, largeProfilePic);
+                largeProfilePic = newDiv;
+            }
+        } else {
+            // Just update the div
+            largeProfilePic.style.backgroundColor = getColorForLetter(firstLetter);
+            largeProfilePic.textContent = firstLetter;
+        }
     }
     
     // Populate profile form
@@ -272,387 +364,446 @@ if (typeof window.supabase !== 'undefined') {
         avatarOverlay.addEventListener('click', () => {
             avatarModal.style.display = 'block';
             
-            // Set current avatar as preview
-            avatarPreview.src = largeProfilePic.src;
+            // Set current avatar as preview or first letter
+            const userData = getUserFromLocalStorage();
+            if (userData.avatarUrl) {
+                avatarPreview.src = userData.avatarUrl;
+                avatarPreview.onerror = () => {
+                    createAvatarPreview(userData.name || userData.email[0]);
+                };
+            } else {
+                createAvatarPreview(userData.name || userData.email[0]);
+            }
         });
+        
+        // Create avatar preview with letter
+        function createAvatarPreview(name) {
+            const firstLetter = name.charAt(0).toUpperCase();
+            const canvas = document.createElement('canvas');
+            canvas.width = 200;
+            canvas.height = 200;
+            const ctx = canvas.getContext('2d');
+            
+            // Draw background
+            ctx.fillStyle = getColorForLetter(firstLetter);
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw letter
+            ctx.font = 'bold 100px Arial';
+            ctx.fillStyle = '#FFFFFF';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(firstLetter, canvas.width/2, canvas.height/2);
+            
+            // Set as preview
+            avatarPreview.src = canvas.toDataURL('image/png');
+        }
         
         // Close modal when clicking the X
         modalClose.addEventListener('click', () => {
             avatarModal.style.display = 'none';
         });
         
-        // Close modal when clicking outside of it
-        window.addEventListener('click', (event) => {
-            if (event.target === avatarModal) {
-                avatarModal.style.display = 'none';
+                // Close modal when clicking outside of it
+                window.addEventListener('click', (event) => {
+                    if (event.target === avatarModal) {
+                        avatarModal.style.display = 'none';
+                    }
+                });
+                
+                // Preview selected image
+                avatarInput.addEventListener('change', () => {
+                    const file = avatarInput.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            avatarPreview.src = e.target.result;
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+                
+                // Handle avatar form submission
+                avatarForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    
+                    const file = avatarInput.files[0];
+                    if (!file) {
+                        alert('Please select an image');
+                        return;
+                    }
+                    
+                    // Show loading state
+                    const submitBtn = avatarForm.querySelector('button[type="submit"]');
+                    submitBtn.textContent = 'Uploading...';
+                    submitBtn.disabled = true;
+                    
+                    // Convert the selected file to a data URL
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const newAvatarUrl = e.target.result;
+                        
+                        // Get user data
+                        const userData = getUserFromLocalStorage();
+                        
+                        // Update avatar URL in user data
+                        userData.avatarUrl = newAvatarUrl;
+                        
+                        // Save to localStorage
+                        localStorage.setItem('userData', JSON.stringify(userData));
+                        
+                        // Update UI with the new avatar
+                        if (largeProfilePic.tagName !== 'IMG') {
+                            // Convert div to img
+                            const parentElement = largeProfilePic.parentElement;
+                            const newImg = document.createElement('img');
+                            newImg.id = 'largeProfilePic';
+                            newImg.src = newAvatarUrl;
+                            newImg.alt = 'Profile Picture';
+                            newImg.style.width = '100%';
+                            newImg.style.height = '100%';
+                            newImg.style.objectFit = 'cover';
+                            
+                            if (parentElement) {
+                                parentElement.replaceChild(newImg, largeProfilePic);
+                                largeProfilePic = newImg;
+                            }
+                        } else {
+                            largeProfilePic.src = newAvatarUrl;
+                        }
+                        
+                        // Update navbar profile pic
+                        if (profilePic.tagName !== 'IMG') {
+                            // Convert div to img
+                            const parentElement = profilePic.parentElement;
+                            const newImg = document.createElement('img');
+                            newImg.id = 'profilePic';
+                            newImg.src = newAvatarUrl;
+                            newImg.alt = 'User';
+                            newImg.style.width = '35px';
+                            newImg.style.height = '35px';
+                            newImg.style.borderRadius = '50%';
+                            newImg.style.marginRight = '10px';
+                            newImg.style.objectFit = 'cover';
+                            
+                            if (parentElement) {
+                                parentElement.replaceChild(newImg, profilePic);
+                                profilePic = newImg;
+                            }
+                        } else {
+                            profilePic.src = newAvatarUrl;
+                        }
+                        
+                        // Close modal
+                        avatarModal.style.display = 'none';
+                        
+                        // Reset form
+                        avatarForm.reset();
+                        submitBtn.textContent = 'Upload';
+                        submitBtn.disabled = false;
+                        
+                        // Show success message
+                        alert('Profile picture updated successfully!');
+                    };
+                    reader.readAsDataURL(file);
+                });
             }
-        });
         
-        // Preview selected image
-        avatarInput.addEventListener('change', () => {
-            const file = avatarInput.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    avatarPreview.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
+            // Initialize account settings
+            function initializeAccountSettings() {
+                // Initialize password form
+                initPasswordForm();
+                
+                // Initialize notification settings
+                initNotificationSettings();
+                
+                // Initialize privacy settings
+                initPrivacySettings();
+                
+                // Initialize danger zone (delete account)
+                initDeleteAccount();
             }
-        });
         
-        // Handle avatar form submission
-        avatarForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            
-            const file = avatarInput.files[0];
-            if (!file) {
-                alert('Please select an image');
-                return;
+            // Initialize password form
+            function initPasswordForm() {
+                const passwordForm = document.getElementById('passwordForm');
+                if (!passwordForm) return;
+                
+                // Initialize password toggles
+                const togglePasswordElements = document.querySelectorAll('.toggle-password');
+                togglePasswordElements.forEach(toggle => {
+                    toggle.addEventListener('click', function() {
+                        const input = this.parentElement.querySelector('input');
+                        if (input.type === 'password') {
+                            input.type = 'text';
+                            this.classList.replace('fa-eye-slash', 'fa-eye');
+                        } else {
+                            input.type = 'password';
+                            this.classList.replace('fa-eye', 'fa-eye-slash');
+                        }
+                    });
+                });
+                
+                // Initialize password strength meter
+                const newPassword = document.getElementById('newPassword');
+                const strengthLevel = document.getElementById('strengthLevel');
+                const strengthText = document.getElementById('strengthText');
+                
+                if (newPassword && strengthLevel && strengthText) {
+                    newPassword.addEventListener('input', () => {
+                        const score = calculatePasswordStrength(newPassword.value);
+                        
+                        // Update strength meter
+                        strengthLevel.style.width = `${score}%`;
+                        
+                        // Update color based on strength
+                        if (score < 25) {
+                            strengthLevel.style.backgroundColor = '#db4437'; // Red
+                            strengthText.textContent = 'Weak password';
+                        } else if (score < 50) {
+                            strengthLevel.style.backgroundColor = '#f4b400'; // Yellow
+                            strengthText.textContent = 'Fair password';
+                        } else if (score < 75) {
+                            strengthLevel.style.backgroundColor = '#0f9d58'; // Green
+                            strengthText.textContent = 'Good password';
+                        } else {
+                            strengthLevel.style.backgroundColor = '#4285f4'; // Blue
+                            strengthText.textContent = 'Strong password';
+                        }
+                    });
+                }
+                
+                // Handle form submission
+                passwordForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    
+                    const currentPassword = document.getElementById('currentPassword').value;
+                    const newPassword = document.getElementById('newPassword').value;
+                    const confirmPassword = document.getElementById('confirmPassword').value;
+                    
+                    // Validate passwords
+                    if (!currentPassword || !newPassword || !confirmPassword) {
+                        alert('Please fill in all password fields');
+                        return;
+                    }
+                    
+                    if (newPassword !== confirmPassword) {
+                        alert('New passwords do not match');
+                        return;
+                    }
+                    
+                    // Show loading state
+                    const submitBtn = passwordForm.querySelector('button[type="submit"]');
+                    submitBtn.textContent = 'Updating...';
+                    submitBtn.disabled = true;
+                    
+                    // Simulate password update (in real app, this would be an API call)
+                    setTimeout(() => {
+                        // Show success message
+                        alert('Password updated successfully');
+                        
+                        // Reset form
+                        passwordForm.reset();
+                        
+                        // Reset strength meter
+                        if (strengthLevel && strengthText) {
+                            strengthLevel.style.width = '0';
+                            strengthText.textContent = 'Password strength';
+                        }
+                        
+                        // Reset button state
+                        submitBtn.textContent = 'Update Password';
+                        submitBtn.disabled = false;
+                    }, 1000);
+                });
             }
-            
-            // Show loading state
-            const submitBtn = avatarForm.querySelector('button[type="submit"]');
-            submitBtn.textContent = 'Uploading...';
-            submitBtn.disabled = true;
-            
-            // Convert the selected file to a data URL
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const newAvatarUrl = e.target.result;
+        
+            // Initialize notification settings
+            function initNotificationSettings() {
+                const saveNotificationBtn = document.getElementById('saveNotificationSettings');
+                if (!saveNotificationBtn) return;
                 
                 // Get user data
                 const userData = getUserFromLocalStorage();
                 
-                // Update avatar URL in user data
-                userData.avatarUrl = newAvatarUrl;
-                
-                // Save to localStorage
-                localStorage.setItem('userData', JSON.stringify(userData));
-                
-                // Update UI with the new avatar
-                largeProfilePic.src = newAvatarUrl;
-                if (profilePic) profilePic.src = newAvatarUrl;
-                
-                // Close modal
-                avatarModal.style.display = 'none';
-                
-                // Reset form
-                submitBtn.textContent = 'Upload';
-                submitBtn.disabled = false;
-                
-                // Show success message
-                alert('Profile picture updated successfully!');
-            };
-            reader.readAsDataURL(file);
-        });
-    }
-
-    // Initialize account settings
-    function initializeAccountSettings() {
-        // Initialize password form
-        initPasswordForm();
-        
-        // Initialize notification settings
-        initNotificationSettings();
-        
-        // Initialize privacy settings
-        initPrivacySettings();
-        
-        // Initialize danger zone (delete account)
-        initDeleteAccount();
-    }
-
-    // Initialize password form
-    function initPasswordForm() {
-        const passwordForm = document.getElementById('passwordForm');
-        if (!passwordForm) return;
-        
-        // Initialize password toggles
-        const togglePasswordElements = document.querySelectorAll('.toggle-password');
-        togglePasswordElements.forEach(toggle => {
-            toggle.addEventListener('click', function() {
-                const input = this.parentElement.querySelector('input');
-                if (input.type === 'password') {
-                    input.type = 'text';
-                    this.classList.replace('fa-eye-slash', 'fa-eye');
-                } else {
-                    input.type = 'password';
-                    this.classList.replace('fa-eye', 'fa-eye-slash');
+                // Set initial checkbox states based on user data
+                if (userData.notifications) {
+                    document.getElementById('notifyStudyReminders').checked = userData.notifications.studyReminders;
+                    document.getElementById('notifyNewFeatures').checked = userData.notifications.newFeatures;
+                    document.getElementById('notifyComments').checked = userData.notifications.comments;
+                    document.getElementById('notifyUpdates').checked = userData.notifications.updates;
                 }
-            });
-        });
-        
-        // Initialize password strength meter
-        const newPassword = document.getElementById('newPassword');
-        const strengthLevel = document.getElementById('strengthLevel');
-        const strengthText = document.getElementById('strengthText');
-        
-        if (newPassword && strengthLevel && strengthText) {
-            newPassword.addEventListener('input', () => {
-                const score = calculatePasswordStrength(newPassword.value);
                 
-                // Update strength meter
-                strengthLevel.style.width = `${score}%`;
-                
-                // Update color based on strength
-                if (score < 25) {
-                    strengthLevel.style.backgroundColor = '#db4437'; // Red
-                    strengthText.textContent = 'Weak password';
-                } else if (score < 50) {
-                    strengthLevel.style.backgroundColor = '#f4b400'; // Yellow
-                    strengthText.textContent = 'Fair password';
-                } else if (score < 75) {
-                    strengthLevel.style.backgroundColor = '#0f9d58'; // Green
-                    strengthText.textContent = 'Good password';
-                } else {
-                    strengthLevel.style.backgroundColor = '#4285f4'; // Blue
-                    strengthText.textContent = 'Strong password';
-                }
-            });
-        }
-        
-        // Handle form submission
-        passwordForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            
-            const currentPassword = document.getElementById('currentPassword').value;
-            const newPassword = document.getElementById('newPassword').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-            
-            // Validate passwords
-            if (!currentPassword || !newPassword || !confirmPassword) {
-                alert('Please fill in all password fields');
-                return;
+                // Handle save button click
+                saveNotificationBtn.addEventListener('click', () => {
+                    // Get checkbox states
+                    const studyReminders = document.getElementById('notifyStudyReminders').checked;
+                    const newFeatures = document.getElementById('notifyNewFeatures').checked;
+                    const comments = document.getElementById('notifyComments').checked;
+                    const updates = document.getElementById('notifyUpdates').checked;
+                    
+                    // Update notification settings
+                    userData.notifications = {
+                        studyReminders,
+                        newFeatures,
+                        comments,
+                        updates
+                    };
+                    
+                    // Save to localStorage
+                    localStorage.setItem('userData', JSON.stringify(userData));
+                    
+                    // Show loading state
+                    saveNotificationBtn.textContent = 'Saving...';
+                    saveNotificationBtn.disabled = true;
+                    
+                    // Simulate API delay
+                    setTimeout(() => {
+                        // Show success message
+                        alert('Notification settings saved');
+                        
+                        // Reset button state
+                        saveNotificationBtn.textContent = 'Save Notification Settings';
+                        saveNotificationBtn.disabled = false;
+                    }, 1000);
+                });
             }
-            
-            if (newPassword !== confirmPassword) {
-                alert('New passwords do not match');
-                return;
-            }
-            
-            // Show loading state
-            const submitBtn = passwordForm.querySelector('button[type="submit"]');
-            submitBtn.textContent = 'Updating...';
-            submitBtn.disabled = true;
-            
-            // Simulate password update (in real app, this would be an API call)
-            setTimeout(() => {
-                // Show success message
-                alert('Password updated successfully');
-                
-                // Reset form
-                passwordForm.reset();
-                
-                // Reset strength meter
-                if (strengthLevel && strengthText) {
-                    strengthLevel.style.width = '0';
-                    strengthText.textContent = 'Password strength';
-                }
-                
-                // Reset button state
-                submitBtn.textContent = 'Update Password';
-                submitBtn.disabled = false;
-            }, 1000);
-        });
-    }
-
-       // Initialize notification settings
-       function initNotificationSettings() {
-        const saveNotificationBtn = document.getElementById('saveNotificationSettings');
-        if (!saveNotificationBtn) return;
         
-        // Handle save button click
-        saveNotificationBtn.addEventListener('click', () => {
-            // Get checkbox states
-            const studyReminders = document.getElementById('notifyStudyReminders').checked;
-            const newFeatures = document.getElementById('notifyNewFeatures').checked;
-            const comments = document.getElementById('notifyComments').checked;
-            const updates = document.getElementById('notifyUpdates').checked;
-            
-            // Get user data
-            const userData = getUserFromLocalStorage();
-            
-            // Update notification settings
-            userData.notifications = {
-                studyReminders,
-                newFeatures,
-                comments,
-                updates
-            };
-            
-            // Save to localStorage
-            localStorage.setItem('userData', JSON.stringify(userData));
-            
-            // Show loading state
-            saveNotificationBtn.textContent = 'Saving...';
-            saveNotificationBtn.disabled = true;
-            
-            // Simulate API delay
-            setTimeout(() => {
-                // Show success message
-                alert('Notification settings saved');
+            // Initialize privacy settings
+            function initPrivacySettings() {
+                const savePrivacyBtn = document.getElementById('savePrivacySettings');
+                if (!savePrivacyBtn) return;
                 
-                // Reset button state
-                saveNotificationBtn.textContent = 'Save Notification Settings';
-                saveNotificationBtn.disabled = false;
-            }, 1000);
-        });
-    }
-
-    // Initialize privacy settings
-    function initPrivacySettings() {
-        const savePrivacyBtn = document.getElementById('savePrivacySettings');
-        if (!savePrivacyBtn) return;
-        
-        // Handle save button click
-        savePrivacyBtn.addEventListener('click', () => {
-            // Get select values
-            const profileVisibility = document.getElementById('profileVisibility').value;
-            const notesVisibility = document.getElementById('notesVisibility').value;
-            
-            // Get user data
-            const userData = getUserFromLocalStorage();
-            
-            // Update privacy settings
-            userData.privacy = {
-                profileVisibility,
-                notesVisibility
-            };
-            
-            // Save to localStorage
-            localStorage.setItem('userData', JSON.stringify(userData));
-            
-            // Show loading state
-            savePrivacyBtn.textContent = 'Saving...';
-            savePrivacyBtn.disabled = true;
-            
-            // Simulate API delay
-            setTimeout(() => {
-                // Show success message
-                alert('Privacy settings saved');
-                
-                // Reset button state
-                savePrivacyBtn.textContent = 'Save Privacy Settings';
-                savePrivacyBtn.disabled = false;
-            }, 1000);
-        });
-    }
-
-    // Initialize delete account functionality
-    function initDeleteAccount() {
-        const deleteAccountBtn = document.getElementById('deleteAccount');
-        if (!deleteAccountBtn) return;
-        
-        deleteAccountBtn.addEventListener('click', () => {
-            // Show confirmation dialog
-            const confirmed = confirm('Are you sure you want to delete your account? This action cannot be undone.');
-            
-            if (confirmed) {
                 // Get user data
                 const userData = getUserFromLocalStorage();
                 
-                // Ask for email confirmation
-                const emailConfirmation = prompt(`To confirm deletion, please type your email address (${userData.email}):`);
+                // Set initial select values based on user data
+                if (userData.privacy) {
+                    document.getElementById('profileVisibility').value = userData.privacy.profileVisibility || 'public';
+                    document.getElementById('notesVisibility').value = userData.privacy.notesVisibility || 'public';
+                }
                 
-                if (emailConfirmation === userData.email) {
-                    // Clear user data from localStorage
-                    localStorage.removeItem('userData');
+                // Handle save button click
+                savePrivacyBtn.addEventListener('click', () => {
+                    // Get select values
+                    const profileVisibility = document.getElementById('profileVisibility').value;
+                    const notesVisibility = document.getElementById('notesVisibility').value;
                     
-                    // Show success message
-                    alert('Your account has been deleted. You are now signed out.');
+                    // Update privacy settings
+                    userData.privacy = {
+                        profileVisibility,
+                        notesVisibility
+                    };
                     
-                    // Redirect to home page
-                    window.location.href = 'index.html';
-                } else {
-                    alert('Email address does not match. Account deletion cancelled.');
+                    // Save to localStorage
+                    localStorage.setItem('userData', JSON.stringify(userData));
+                    
+                    // Show loading state
+                    savePrivacyBtn.textContent = 'Saving...';
+                    savePrivacyBtn.disabled = true;
+                    
+                    // Simulate API delay
+                    setTimeout(() => {
+                        // Show success message
+                        alert('Privacy settings saved');
+                        
+                        // Reset button state
+                        savePrivacyBtn.textContent = 'Save Privacy Settings';
+                        savePrivacyBtn.disabled = false;
+                    }, 1000);
+                });
+            }
+        
+            // Initialize delete account functionality
+            function initDeleteAccount() {
+                const deleteAccountBtn = document.getElementById('deleteAccount');
+                if (!deleteAccountBtn) return;
+                
+                deleteAccountBtn.addEventListener('click', () => {
+                    // Show confirmation dialog
+                    const confirmed = confirm('Are you sure you want to delete your account? This action cannot be undone.');
+                    
+                    if (confirmed) {
+                        // Get user data
+                        const userData = getUserFromLocalStorage();
+                        
+                        // Ask for email confirmation
+                        const emailConfirmation = prompt(`To confirm deletion, please type your email address (${userData.email}):`);
+                        
+                        if (emailConfirmation === userData.email) {
+                            // Clear user data from localStorage
+                            localStorage.removeItem('userData');
+                            
+                            // Show success message
+                            alert('Your account has been deleted. You are now signed out.');
+                            
+                            // Redirect to home page
+                            window.location.href = 'index.html';
+                        } else {
+                            alert('Email address does not match. Account deletion cancelled.');
+                        }
+                    }
+                });
+            }
+            
+            // Set up logout button
+            function setupLogoutButton() {
+                if (logoutBtn) {
+                    logoutBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        
+                        // Clear user data (in a real app, this would also involve API calls)
+                        localStorage.removeItem('userData');
+                        
+                        // Redirect to home page
+                        window.location.href = 'index.html';
+                    });
                 }
             }
-        });
-    }
-    
-    // Set up logout button
-    function setupLogoutButton() {
-        if (logoutBtn) {
-            logoutBtn.addEventListener('click', (e) => {
-                e.preventDefault();
+        
+            // Calculate password strength score (0-100)
+            function calculatePasswordStrength(password) {
+                if (!password) return 0;
                 
-                // Clear user data (in a real app, this would also involve API calls)
-                localStorage.removeItem('userData');
+                let score = 0;
                 
-                // Redirect to home page
-                window.location.href = 'index.html';
-            });
-        }
-    }
-
-    // Calculate password strength score (0-100)
-    function calculatePasswordStrength(password) {
-        if (!password) return 0;
-        
-        let score = 0;
-        
-        // Length check
-        score += Math.min(password.length * 5, 30);
-        
-        // Character variety
-        if (/[A-Z]/.test(password)) score += 10; // Uppercase
-        if (/[a-z]/.test(password)) score += 10; // Lowercase
-        if (/[0-9]/.test(password)) score += 10; // Numbers
-        if (/[^A-Za-z0-9]/.test(password)) score += 15; // Special chars
-        
-        // Pattern variety
-        if (/[A-Z].*[A-Z]/.test(password)) score += 5; // Multiple uppercase
-        if (/[a-z].*[a-z]/.test(password)) score += 5; // Multiple lowercase
-        if (/[0-9].*[0-9]/.test(password)) score += 5; // Multiple numbers
-        if (/[^A-Za-z0-9].*[^A-Za-z0-9]/.test(password)) score += 10; // Multiple special chars
-        
-        return Math.min(score, 100); // Cap at 100
-    }
-    
-    // Create demo user data in localStorage if not exists
-    function initializeDemoUser() {
-        if (!localStorage.getItem('userData')) {
-            const demoUser = {
-                email: 'user@example.com',
-                name: '',
-                createdAt: '2025-03-02T18:46:27Z', // Using the current UTC time you provided
-                notifications: {
-                    studyReminders: true,
-                    newFeatures: true,
-                    comments: false,
-                    updates: true
-                },
-                privacy: {
-                    profileVisibility: 'public',
-                    notesVisibility: 'friends'
+                // Length check
+                score += Math.min(password.length * 5, 30);
+                
+                // Character variety
+                if (/[A-Z]/.test(password)) score += 10; // Uppercase
+                if (/[a-z]/.test(password)) score += 10; // Lowercase
+                if (/[0-9]/.test(password)) score += 10; // Numbers
+                if (/[^A-Za-z0-9]/.test(password)) score += 15; // Special chars
+                
+                // Pattern variety
+                if (/[A-Z].*[A-Z]/.test(password)) score += 5; // Multiple uppercase
+                if (/[a-z].*[a-z]/.test(password)) score += 5; // Multiple lowercase
+                if (/[0-9].*[0-9]/.test(password)) score += 5; // Multiple numbers
+                if (/[^A-Za-z0-9].*[^A-Za-z0-9]/.test(password)) score += 10; // Multiple special chars
+                
+                return Math.min(score, 100); // Cap at 100
+            }
+            
+            // Set up mobile menu toggle
+            window.showMenu = function() {
+                const navLinks = document.getElementById('navLinks');
+                if (navLinks) {
+                    navLinks.style.right = '0';
                 }
             };
-            localStorage.setItem('userData', JSON.stringify(demoUser));
-        }
-    }
-
-    // Set up mobile menu toggle
-    window.showMenu = function() {
-        const navLinks = document.getElementById('navLinks');
-        if (navLinks) {
-            navLinks.style.right = '0';
-        }
-    };
-
-    window.hideMenu = function() {
-        const navLinks = document.getElementById('navLinks');
-        if (navLinks) {
-            navLinks.style.right = '-200px';
-        }
-    };
-
-    // Initialize demo user on first load
-    initializeDemoUser();
-
-    // Update the copyright year in the footer
-    const copyrightElement = document.querySelector('.copyright p');
-    if (copyrightElement) {
-        const currentYear = new Date().getFullYear();
-        copyrightElement.textContent = `© ${currentYear} NotesBuddy. All Rights Reserved.`;
-    }
-})();
+        
+            window.hideMenu = function() {
+                const navLinks = document.getElementById('navLinks');
+                if (navLinks) {
+                    navLinks.style.right = '-200px';
+                }
+            };
+        
+            // Update the copyright year in the footer
+            const copyrightElement = document.querySelector('.copyright p');
+            if (copyrightElement) {
+                const currentYear = new Date().getFullYear();
+                copyrightElement.textContent = `© ${currentYear} NotesBuddy. All Rights Reserved.`;
+            }
+        })();
