@@ -7,10 +7,9 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="profile-styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-    <!-- Navbar - Matching the index.html navbar structure -->
+    <!-- Navbar -->
     <nav class="navbar">
         <div class="navbar-container">
             <div class="logo">
@@ -33,8 +32,8 @@
             
             <!-- User is logged in -->
             <div class="user-profile" id="userProfile" style="display:none;">
-                <img src="images/default-avatar.png" alt="User" id="profilePic">
-                <span id="userName">Shreyas Roy</span>
+                <div id="profilePic" style="width:35px;height:35px;border-radius:50%;background:#4285F4;color:white;display:flex;align-items:center;justify-content:center;margin-right:10px;font-weight:bold;">U</div>
+                <span id="userName">User</span>
                 <div class="profile-dropdown">
                     <a href="profile.html">My Profile</a>
                     <a href="#" id="logoutBtn">Logout</a>
@@ -54,15 +53,15 @@
         <div class="profile-header">
             <div class="profile-avatar-container">
                 <div class="profile-avatar">
-                    <img src="images/default-avatar.png" id="largeProfilePic" alt="Profile Picture">
+                    <div id="largeProfilePic" style="width:100%;height:100%;border-radius:50%;background:#4285F4;color:white;display:flex;align-items:center;justify-content:center;font-size:4rem;font-weight:bold;">U</div>
                     <div class="avatar-overlay">
                         <i class="fas fa-camera"></i>
                         <span>Change Photo</span>
                     </div>
                 </div>
             </div>
-            <h2 id="profileName">Shreyas Roy</h2>
-            <p id="memberSince">Member since: March 2, 2025</p>
+            <h2 id="profileName">User</h2>
+            <p id="memberSince">Member since: Loading...</p>
         </div>
 
         <div class="profile-content">
@@ -77,11 +76,11 @@
                 <form id="profileForm">
                     <div class="form-group">
                         <label for="editFullName">Full Name</label>
-                        <input type="text" id="editFullName" name="fullName" placeholder="Your full name" value="Shreyas Roy">
+                        <input type="text" id="editFullName" name="fullName" placeholder="Your full name">
                     </div>
                     <div class="form-group">
                         <label for="editEmail">Email (cannot be changed)</label>
-                        <input type="email" id="editEmail" name="email" disabled value="shreyasroy123@example.com">
+                        <input type="email" id="editEmail" name="email" disabled>
                     </div>
                     <div class="form-group">
                         <label for="editPhone">Phone</label>
@@ -126,7 +125,7 @@
             <h3>Upload Profile Picture</h3>
             <form id="avatarForm">
                 <div class="avatar-preview">
-                    <img id="avatarPreview" src="images/default-avatar.png" alt="Avatar Preview">
+                    <img id="avatarPreview" alt="Avatar Preview">
                 </div>
                 <div class="form-group">
                     <label for="avatarInput">Select an image:</label>
@@ -172,18 +171,30 @@
     </footer>
 
     <script>
-    // Brief inline script to ensure the profile is displayed correctly 
-    // before external scripts load
-    document.addEventListener('DOMContentLoaded', function() {
-        // Set the hardcoded values
-        const userProfile = document.getElementById('userProfile');
-        const authButtons = document.getElementById('authButtons');
-        
-        if (authButtons) authButtons.style.display = 'none';
-        if (userProfile) userProfile.style.display = 'flex';
-    });
+    // Initialize demo login state if not exists
+    window.isLoggedIn = true;
+    
+    if (!localStorage.getItem('userData')) {
+        const demoUser = {
+            email: 'shreyasroy123@example.com', // Using the login you provided
+            name: '',
+            createdAt: '2025-03-02T18:49:35Z', // Using the current timestamp you provided
+            notifications: {
+                studyReminders: true,
+                newFeatures: true,
+                comments: false,
+                updates: true
+            },
+            privacy: {
+                profileVisibility: 'public',
+                notesVisibility: 'friends'
+            }
+        };
+        localStorage.setItem('userData', JSON.stringify(demoUser));
+    }
     </script>
 
+    <!-- Load additional scripts -->
     <script src="app.js"></script>
     <script src="profile.js"></script>
 </body>
