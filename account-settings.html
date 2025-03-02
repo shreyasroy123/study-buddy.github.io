@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Settings | NotesBuddy</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="profile-styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <!-- Navbar - Matching the index.html navbar structure -->
+    <nav class="navbar">
+        <div class="navbar-container">
+            <div class="logo">
+                <a href="index.html">NotesBuddy</a>
+            </div>
+            <div class="nav-links" id="navLinks">
+                <i class="fas fa-times" onclick="hideMenu()"></i>
+                <ul>
+                    <li><a href="schools.html">Schools</a></li>
+                    <li><a href="doubts.html">Questions/Doubts</a></li>
+                    <li><a href="announcements.html">Announcements</a></li>
+                </ul>
+            </div>
+            
+            <!-- User is not logged in -->
+            <div class="auth-buttons" id="authButtons">
+                <a href="login.html" class="btn">Log In</a>
+                <a href="signup.html" class="btn">Sign Up</a>
+            </div>
+            
+            <!-- User is logged in -->
+            <div class="user-profile" id="userProfile" style="display:none;">
+                <img src="images/default-avatar.png" alt="User" id="profilePic">
+                <span id="userName">User</span>
+                <div class="profile-dropdown">
+                    <a href="profile.html">My Profile</a>
+                    <a href="#" id="logoutBtn">Logout</a>
+                </div>
+            </div>
+            
+            <i class="fas fa-bars" onclick="showMenu()"></i>
+        </div>
+    </nav>
+    
+    <header class="profile-header-banner">
+        <h1>Account Settings</h1>
+    </header>
+
+    <!-- Profile Content -->
+    <section class="profile-container">
+        <div class="profile-content">
+            <div class="profile-nav">
+                <a href="profile.html">Personal Info</a>
+                <a href="study-statistics.html">Study Statistics</a>
+                <a href="account-settings.html" class="active">Account Settings</a>
+            </div>
+
+            <div class="profile-section">
+                <div class="settings-section">
+                    <h3>Change Password</h3>
+                    <form id="passwordForm">
+                        <div class="form-group">
+                            <label for="currentPassword">Current Password</label>
+                            <div class="password-field">
+                                <input type="password" id="currentPassword" name="currentPassword" required>
+                                <i class="toggle-password fas fa-eye-slash"></i>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="newPassword">New Password</label>
+                            <div class="password-field">
+                                <input type="password" id="newPassword" name="newPassword" required>
+                                <i class="toggle-password fas fa-eye-slash"></i>
+                            </div>
+                            <div class="password-strength">
+                                <div class="strength-bar">
+                                    <div class="strength-level" id="strengthLevel"></div>
+                                </div>
+                                <div class="strength-text" id="strengthText">Password strength</div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="confirmPassword">Confirm New Password</label>
+                            <div class="password-field">
+                                <input type="password" id="confirmPassword" name="confirmPassword" required>
+                                <i class="toggle-password fas fa-eye-slash"></i>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">Update Password</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="settings-section">
+                    <h3>Email Notifications</h3>
+                    <div class="notification-settings">
+                        <div class="notification-option">
+                            <input type="checkbox" id="notifyStudyReminders" checked>
+                            <label for="notifyStudyReminders">Study Reminders</label>
+                        </div>
+                        <div class="notification-option">
+                            <input type="checkbox" id="notifyNewFeatures" checked>
+                            <label for="notifyNewFeatures">New Features</label>
+                        </div>
+                        <div class="notification-option">
+                            <input type="checkbox" id="notifyComments">
+                            <label for="notifyComments">Comments on my Notes</label>
+                        </div>
+                        <div class="notification-option">
+                            <input type="checkbox" id="notifyUpdates" checked>
+                            <label for="notifyUpdates">Platform Updates</label>
+                        </div>
+                    </div>
+                    <button id="saveNotificationSettings" class="btn btn-secondary">Save Notification Settings</button>
+                </div>
+                
+                <div class="settings-section">
+                    <h3>Privacy</h3>
+                    <div class="privacy-options">
+                        <div class="setting-item">
+                            <div>
+                                <h4>Profile Visibility</h4>
+                                <p>Control who can see your profile</p>
+                            </div>
+                            <select id="profileVisibility" class="form-select">
+                                <option value="public">Public</option>
+                                <option value="friends">Friends Only</option>
+                                <option value="private">Private</option>
+                            </select>
+                        </div>
+                        <div class="setting-item">
+                            <div>
+                                <h4>Notes Visibility</h4>
+                                <p>Default visibility for your notes</p>
+                            </div>
+                            <select id="notesVisibility" class="form-select">
+                                <option value="public">Public</option>
+                                <option value="friends">Friends Only</option>
+                                <option value="private">Private</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button id="savePrivacySettings" class="btn btn-secondary">Save Privacy Settings</button>
+                </div>
+
+                <div class="settings-section danger-zone">
+                    <h3>Danger Zone</h3>
+                    <div class="danger-action">
+                        <div>
+                            <h4>Delete Account</h4>
+                            <p>Once you delete your account, all of your data will be permanently removed. This action cannot be undone.</p>
+                        </div>
+                        <button id="deleteAccount" class="btn btn-danger">Delete Account</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="footer-container">
+            <div class="footer-logo">
+                <h3>NotesBuddy</h3>
+                <p>Your Study Companion</p>
+            </div>
+            <div class="footer-links">
+                <h4>Quick Links</h4>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="schools.html">Schools</a></li>
+                    <li><a href="doubts.html">Questions/Doubts</a></li>
+                    <li><a href="announcements.html">Announcements</a></li>
+                </ul>
+            </div>
+            <div class="footer-contact">
+                <h4>Contact Us</h4>
+                <p>Email: info@notesbuddy.com</p>
+                <p>Phone: +1 (123) 456-7890</p>
+                <div class="social-icons">
+                    <a href="#"><i class="fab fa-facebook"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                    <a href="#"><i class="fab fa-linkedin"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="copyright">
+            <p>&copy; 2025 NotesBuddy. All Rights Reserved.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="app.js"></script>
+    <script src="profile.js"></script>
+</body>
+</html>
