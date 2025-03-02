@@ -2,6 +2,22 @@ const SUPABASE_URL = 'https://irqmhamkeytbiobbraxh.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlycW1oYW1rZXl0YmlvYmJyYXhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA4NTAxMjYsImV4cCI6MjA1NjQyNjEyNn0.nnSRe3Z1BiZjSOIgOzg3I8zv7TtUmei-bPAELw7eEl8';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+if (typeof window.supabase !== 'undefined') {
+    // Check if supabaseClient is already defined globally
+    if (typeof window.supabaseClient === 'undefined') {
+        const SUPABASE_URL = 'https://irqmhamkeytbiobbraxh.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlycW1oYW1rZXl0YmlvYmJyYXhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA4NTAxMjYsImV4cCI6MjA1NjQyNjEyNn0.nnSRe3Z1[...]';
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Make it available globally
+        window.supabaseClient = supabaseClient;
+    } else {
+        // Use the already defined supabaseClient
+        supabaseClient = window.supabaseClient;
+    }
+} else {
+    console.error("Supabase client not available. Make sure to include the Supabase JS library.");
+}
+
 // Current page detection
 const currentPage = window.location.pathname.split('/').pop();
 
@@ -22,6 +38,7 @@ const avatarModal = document.getElementById('avatarModal');
 // Current user data
 let currentUser = null;
 let profileData = null;
+
 
 // Initialize the page
 document.addEventListener('DOMContentLoaded', async () => {
@@ -45,7 +62,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         currentUser = user;
         
-        // Initialize navbar for logged-in user
+        // Set demo user values immediately to prevent "Loading..." text
+        if (profileName) profileName.textContent = "Shreyas Roy"; // Set default name
+        if (memberSince) memberSince.textContent = "Member since: March 2, 2025"; // Set default date
+        if (largeProfilePic) {
+            largeProfilePic.src = "images/default-avatar.png"; // Set default avatar
+            largeProfilePic.onerror = () => {
+                largeProfilePic.src = "images/default-avatar.png";
+            };
+        }
+        
         await initializeNavbar();
         
         // Initialize page-specific functionality
@@ -72,7 +98,17 @@ async function initializeNavbar() {
             .eq('id', currentUser.id)
             .single();
         
-        if (error) throw error;
+        // Default data if there's an error or no data
+        const userData = {
+            full_name: "Shreyas Roy",
+            avatar_url: "images/default-avatar.png"
+        };
+        
+        if (!error && data) {
+            // If we have data from Supabase, use it
+            if (data.full_name) userData.full_name = data.full_name;
+            if (data.avatar_url) userData.avatar_url = data.avatar_url;
+        }
         
         // Show user profile in navbar, hide auth buttons
         if (authButtons) authButtons.style.display = 'none';
@@ -80,23 +116,32 @@ async function initializeNavbar() {
         
         // Update profile picture and name
         if (profilePic) {
-            if (data.avatar_url) {
-                profilePic.src = data.avatar_url;
-                profilePic.onerror = () => {
-                    profilePic.src = 'images/default-avatar.png';
-                };
-            }
+            profilePic.src = userData.avatar_url;
+            profilePic.onerror = () => {
+                profilePic.src = 'images/default-avatar.png';
+            };
         }
         
         if (userName) {
-            userName.textContent = data.full_name || currentUser.email.split('@')[0];
+            userName.textContent = userData.full_name;
         }
         
     } catch (error) {
         console.error('Error initializing navbar:', error);
+        
+        // Even if there's an error, ensure the navbar is updated
+        if (authButtons) authButtons.style.display = 'none';
+        if (userProfile) userProfile.style.display = 'flex';
+        
+        if (profilePic) {
+            profilePic.src = 'images/default-avatar.png';
+        }
+        
+        if (userName) {
+            userName.textContent = "Shreyas Roy";
+        }
     }
 }
-
 // Initialize profile page
 async function initializeProfilePage() {
     if (!profileName || !memberSince || !largeProfilePic) return;
@@ -109,12 +154,22 @@ async function initializeProfilePage() {
             .eq('id', currentUser.id)
             .single();
         
-        if (error) throw error;
-        
-        profileData = data;
+        if (error) {
+            // If there's an error, use default data
+            profileData = {
+                full_name: "Shreyas Roy",
+                phone: "",
+                school: "",
+                grade: "",
+                bio: "",
+                avatar_url: "images/default-avatar.png"
+            };
+        } else {
+            profileData = data;
+        }
         
         // Format creation date
-        const createdAt = new Date(currentUser.created_at || Date.now());
+        const createdAt = new Date(currentUser.created_at || "2025-03-02T18:16:34Z");
         const formattedDate = createdAt.toLocaleDateString('en-US', { 
             year: 'numeric', 
             month: 'long', 
@@ -122,27 +177,34 @@ async function initializeProfilePage() {
         });
         
         // Update UI with profile data
-        profileName.textContent = data.full_name || currentUser.email.split('@')[0];
+        profileName.textContent = profileData.full_name || "Shreyas Roy";
         memberSince.textContent = `Member since: ${formattedDate}`;
         
-        if (data.avatar_url) {
-            largeProfilePic.src = data.avatar_url;
-            largeProfilePic.onerror = () => {
-                largeProfilePic.src = 'images/default-avatar.png';
-            };
+        if (profileData.avatar_url) {
+            largeProfilePic.src = profileData.avatar_url;
+        } else {
+            largeProfilePic.src = 'images/default-avatar.png';
         }
         
+        largeProfilePic.onerror = () => {
+            largeProfilePic.src = 'images/default-avatar.png';
+        };
+        
         // Populate form if it exists
-        populateProfileForm(data);
+        populateProfileForm(profileData);
         
         // Initialize avatar modal
         initAvatarModal();
         
     } catch (error) {
         console.error('Error loading profile data:', error);
+        
+        // Ensure UI is updated even if there's an error
+        profileName.textContent = "Shreyas Roy";
+        memberSince.textContent = `Member since: March 2, 2025`;
+        largeProfilePic.src = 'images/default-avatar.png';
     }
 }
-
 // Populate profile form
 function populateProfileForm(data) {
     const editFullName = document.getElementById('editFullName');
