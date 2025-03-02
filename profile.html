@@ -34,7 +34,7 @@
             <!-- User is logged in -->
             <div class="user-profile" id="userProfile" style="display:none;">
                 <img src="images/default-avatar.png" alt="User" id="profilePic">
-                <span id="userName">User</span>
+                <span id="userName">Shreyas Roy</span>
                 <div class="profile-dropdown">
                     <a href="profile.html">My Profile</a>
                     <a href="#" id="logoutBtn">Logout</a>
@@ -61,8 +61,8 @@
                     </div>
                 </div>
             </div>
-            <h2 id="profileName">Loading...</h2>
-            <p id="memberSince">Member since: Loading...</p>
+            <h2 id="profileName">Shreyas Roy</h2>
+            <p id="memberSince">Member since: March 2, 2025</p>
         </div>
 
         <div class="profile-content">
@@ -77,11 +77,11 @@
                 <form id="profileForm">
                     <div class="form-group">
                         <label for="editFullName">Full Name</label>
-                        <input type="text" id="editFullName" name="fullName" placeholder="Your full name">
+                        <input type="text" id="editFullName" name="fullName" placeholder="Your full name" value="Shreyas Roy">
                     </div>
                     <div class="form-group">
                         <label for="editEmail">Email (cannot be changed)</label>
-                        <input type="email" id="editEmail" name="email" disabled>
+                        <input type="email" id="editEmail" name="email" disabled value="shreyasroy123@example.com">
                     </div>
                     <div class="form-group">
                         <label for="editPhone">Phone</label>
@@ -171,7 +171,19 @@
         </div>
     </footer>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script>
+    // Brief inline script to ensure the profile is displayed correctly 
+    // before external scripts load
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set the hardcoded values
+        const userProfile = document.getElementById('userProfile');
+        const authButtons = document.getElementById('authButtons');
+        
+        if (authButtons) authButtons.style.display = 'none';
+        if (userProfile) userProfile.style.display = 'flex';
+    });
+    </script>
+
     <script src="app.js"></script>
     <script src="profile.js"></script>
 </body>
