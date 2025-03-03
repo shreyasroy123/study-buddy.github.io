@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Announcements - NotesBuddy</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="navbar-logo">
+                <a href="index.html">
+                    <h1>NotesBuddy</h1>
+                </a>
+            </div>
+            <ul class="navbar-links">
+                <li><a href="schools.html">Schools</a></li>
+                <li><a href="doubts.html">Questions/Doubts</a></li>
+                <li><a href="announcements.html" class="active">Announcements</a></li>
+            </ul>
+            <div class="navbar-auth" id="auth-section">
+                <a href="login.html" class="btn btn-login">Log In</a>
+                <a href="signup.html" class="btn btn-signup">Sign Up</a>
+            </div>
+            <div class="navbar-user" id="user-section" style="display: none;">
+                <span id="user-name"></span>
+                <div class="user-avatar">
+                    <img id="user-avatar" src="" alt="User Avatar">
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main>
+        <div class="announcements-container">
+            <h2>Announcements</h2>
+            <div class="current-date">
+                <i class="far fa-calendar-alt"></i> Current Date: 2025-03-03
+            </div>
+            
+            <div class="filters">
+                <select id="school-filter">
+                    <option value="">All Schools</option>
+                    <!-- Schools will be loaded from Supabase -->
+                </select>
+                <select id="category-filter">
+                    <option value="">All Categories</option>
+                    <option value="academic">Academic</option>
+                    <option value="administrative">Administrative</option>
+                    <option value="event">Events</option>
+                    <option value="deadline">Deadlines</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            
+            <div class="admin-panel" id="admin-panel" style="display: none;">
+                <button id="create-announcement" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Create Announcement
+                </button>
+            </div>
+            
+            <div class="announcements-list" id="announcements-list">
+                <!-- Announcements will be loaded from Supabase -->
+                <div class="loading">Loading announcements...</div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="footer-content">
+            <div class="footer-logo">
+                <h2>NotesBuddy</h2>
+                <p>Your Study Companion</p>
+            </div>
+            <div class="footer-links">
+                <h3>Quick Links</h3>
+                <ul>
+                    <li><a href="index.html">Home</a></li>
+                    <li><a href="schools.html">Schools</a></li>
+                    <li><a href="doubts.html">Questions/Doubts</a></li>
+                    <li><a href="announcements.html">Announcements</a></li>
+                </ul>
+            </div>
+            <div class="footer-contact">
+                <h3>Contact Us</h3>
+                <p>Email: support@notesbuddy.com</p>
+                <div class="social-icons">
+                    <a href="#"><i class="fab fa-facebook"></i></a>
+                    <a href="#"><i class="fab fa-twitter"></i></a>
+                    <a href="#"><i class="fab fa-instagram"></i></a>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 NotesBuddy. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Supabase and Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="scripts.js"></script>
+    <script src="announcements.js"></script>
+</body>
+</html>
