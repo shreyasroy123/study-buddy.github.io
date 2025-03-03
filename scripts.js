@@ -1,11 +1,10 @@
 // Supabase configuration
 const SUPABASE_URL = 'YOUR_SUPABASE_URL';
 const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-// Call this function on page load
-document.addEventListener('DOMContentLoaded', checkUserLoggedIn);
+// Initialize Supabase client - MUST come before any function declarations
+const supabase = supabaseCreateClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Check if user is logged in
+// Enhanced user authentication check
 async function checkUserLoggedIn() {
     try {
         const { data: { user } } = await supabase.auth.getUser();
@@ -199,6 +198,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Common check for all pages
     checkUserLoggedIn();
     
+    // Update dynamic time display
+    updateDateTime();
+    
     // Page-specific initializations
     if (currentPage === 'schools.html') {
         loadSchools();
@@ -246,3 +248,49 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+// Dynamic time update function
+function updateDateTime() {
+    const currentDateElements = document.querySelectorAll('.current-date');
+    if (currentDateElements.length === 0) return;
+    
+    const now = new Date();
+    
+    // Format date as YYYY-MM-DD HH:MM:SS
+    const year = now.getUTCFullYear();
+    const month = String(now.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(now.getUTCDate()).padStart(2, '0');
+    const hours = String(now.getUTCHours()).padStart(2, '0');
+    const minutes = String(now.getUTCMinutes()).padStart(2, '0');
+    const seconds = String(now.getUTCSeconds()).padStart(2, '0');
+    
+    const formattedDateTime = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    
+    currentDateElements.forEach(element => {
+        element.innerHTML = `<i class="far fa-calendar-alt"></i> Current Date: ${formattedDateTime} UTC`;
+    });
+    
+    // Update every second
+    setTimeout(updateDateTime, 1000);
+}
+
+// Function to check if user is admin
+async function checkAdminStatus() {
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return false;
+        
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('is_admin')
+            .eq('id', user.id)
+            .single();
+            
+        if (error) throw error;
+        
+        return data.is_admin === true;
+    } catch (error) {
+        console.error('Error checking admin status:', error);
+        return false;
+    }
+}
