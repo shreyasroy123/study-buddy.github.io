@@ -1,6 +1,6 @@
 // Supabase configuration
-const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
+const SUPABASE_URL = 'https://hrlyspzvewgxmtpcwjvw.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhybHlzcHp2ZXdneG10cGN3anZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA5OTYxNjcsImV4cCI6MjA1NjU3MjE2N30.TKDwRohOzECZ_gmucp6nAauJcDp0YXtiR4oC9weuLt4';
 let supabase;
 
 // Wait for the document to be fully loaded to ensure Supabase library is available
