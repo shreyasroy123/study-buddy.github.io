@@ -1,5 +1,5 @@
-// Handle profile picture preview on signup page
-document.addEventListener('DOMContentLoaded', () => {
+// Fix for profile picture preview on signup page
+document.addEventListener('DOMContentLoaded', function() {
     const profilePicInput = document.getElementById('profile-pic');
     const profilePreview = document.getElementById('profile-preview');
     
@@ -10,7 +10,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 reader.onload = function(e) {
                     profilePreview.src = e.target.result;
-                    profilePreview.style.display = 'block';
                 };
                 
                 reader.readAsDataURL(this.files[0]);

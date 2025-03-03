@@ -1,53 +1,59 @@
-// Function to display user-specific information
+// Function to fetch and display user-specific information from Supabase
 async function displayUserInfo() {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) return;
-    
     try {
-        // Get user profile data
+        // Get current logged-in user
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+            console.log('No user logged in');
+            return;
+        }
+        
+        // Fetch user profile from Supabase
         const { data, error } = await supabase
             .from('profiles')
-            .select(`
-                full_name,
-                phone_number,
-                avatar_url,
-                is_admin,
-                questions:questions(count),
-                replies:replies(count)
-            `)
+            .select('*')
             .eq('id', user.id)
             .single();
             
         if (error) throw error;
         
-        // Update user dashboard if it exists
-        const userDashboard = document.getElementById('user-dashboard');
-        if (userDashboard) {
-            userDashboard.innerHTML = `
+        // Check if user dashboard exists
+        const userDashboardElement = document.getElementById('user-dashboard');
+        if (userDashboardElement) {
+            // Format user information for display
+            userDashboardElement.innerHTML = `
                 <div class="user-profile-card">
-                    <div class="user-avatar-large">
-                        <img src="${data.avatar_url || `https://via.placeholder.com/150/4a86e8/ffffff?text=${data.full_name.charAt(0)}`}" alt="${data.full_name}">
+                    <h2>Welcome, ${data.full_name || 'shreyasroy123'}</h2>
+                    <div class="user-info-item">
+                        <strong>Email:</strong> ${user.email}
                     </div>
-                    <h2>${data.full_name || 'shreyasroy123'}</h2>
-                    <p><i class="fas fa-phone"></i> ${data.phone_number || 'No phone number'}</p>
-                    <p><i class="fas fa-envelope"></i> ${user.email}</p>
-                    <p><i class="fas fa-question-circle"></i> Questions: ${data.questions[0].count || 0}</p>
-                    <p><i class="fas fa-reply"></i> Replies: ${data.replies[0].count || 0}</p>
-                    ${data.is_admin ? '<span class="admin-badge">Admin</span>' : ''}
+                    <div class="user-info-item">
+                        <strong>Phone:</strong> ${data.phone_number || 'Not provided'}
+                    </div>
+                    <div class="user-info-item">
+                        <strong>Account Status:</strong> ${data.is_admin ? 'Administrator' : 'Regular User'}
+                    </div>
                 </div>
             `;
         }
         
+        // Display in navbar
+        const userNameElement = document.getElementById('user-name');
+        const userAvatarElement = document.getElementById('user-avatar');
+        
+        if (userNameElement) {
+            userNameElement.textContent = data.full_name || 'shreyasroy123';
+        }
+        
+        if (userAvatarElement && data.avatar_url) {
+            userAvatarElement.src = data.avatar_url;
+        }
+        
     } catch (error) {
-        console.error('Error displaying user info:', error);
+        console.error('Error fetching user info:', error);
     }
 }
 
-// Call this function when needed
-document.addEventListener('DOMContentLoaded', () => {
-    // Check if we're on a user dashboard page
-    if (document.getElementById('user-dashboard')) {
-        displayUserInfo();
-    }
-});
+// Run on page load
+document.addEventListener('DOMContentLoaded', displayUserInfo);

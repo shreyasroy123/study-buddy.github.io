@@ -2,34 +2,55 @@
 const SUPABASE_URL = 'YOUR_SUPABASE_URL';
 const SUPABASE_ANON_KEY = 'YOUR_SUPABASE_ANON_KEY';
 const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Call this function on page load
+document.addEventListener('DOMContentLoaded', checkUserLoggedIn);
 
 // Check if user is logged in
 async function checkUserLoggedIn() {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (user) {
-        // User is logged in
-        const { data, error } = await supabase
-            .from('profiles')
-            .select('full_name, avatar_url')
-            .eq('id', user.id)
-            .single();
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+            // User is logged in - fetch profile from Supabase
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('full_name, avatar_url')
+                .eq('id', user.id)
+                .single();
+                
+            if (error) throw error;
             
-        if (data) {
-            document.getElementById('auth-section').style.display = 'none';
-            document.getElementById('user-section').style.display = 'flex';
-            document.getElementById('user-name').textContent = data.full_name;
-            
-            if (data.avatar_url) {
-                document.getElementById('user-avatar').src = data.avatar_url;
-            } else {
-                document.getElementById('user-avatar').src = 'https://cdn4.vectorstock.com/i/1000x1000/52/68/account-icon-vector-48295268.jpg';
+            if (data) {
+                // Update UI elements
+                document.getElementById('auth-section').style.display = 'none';
+                document.getElementById('user-section').style.display = 'flex';
+                
+                // Set user name from Supabase
+                const userNameElement = document.getElementById('user-name');
+                if (userNameElement) {
+                    userNameElement.textContent = data.full_name || 'shreyasroy123';
+                }
+                
+                // Set profile picture from Supabase
+                const userAvatarElement = document.getElementById('user-avatar');
+                if (userAvatarElement) {
+                    if (data.avatar_url) {
+                        userAvatarElement.src = data.avatar_url;
+                    } else {
+                        // Create initials-based avatar as fallback
+                        const names = (data.full_name || 'shreyasroy123').split(' ');
+                        const initials = names.map(name => name.charAt(0)).join('').toUpperCase();
+                        userAvatarElement.src = `https://via.placeholder.com/40/4a86e8/ffffff?text=${initials}`;
+                    }
+                }
             }
+        } else {
+            // User is not logged in
+            document.getElementById('auth-section').style.display = 'flex';
+            document.getElementById('user-section').style.display = 'none';
         }
-    } else {
-        // User is not logged in
-        document.getElementById('auth-section').style.display = 'flex';
-        document.getElementById('user-section').style.display = 'none';
+    } catch (error) {
+        console.error("Error checking authentication status:", error);
     }
 }
 
