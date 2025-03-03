@@ -18,7 +18,7 @@ if (typeof window.supabase !== 'undefined') {
     console.error("Supabase client not available. Make sure to include the Supabase JS library.");
 }
 
-// Profile page initialization with Supabase integration
+// Profile page initialization
 (function() {
     // DOM Elements - Common for all profile pages
     const userProfile = document.getElementById('userProfile');
@@ -35,219 +35,235 @@ if (typeof window.supabase !== 'undefined') {
     // Initialize the page
     document.addEventListener('DOMContentLoaded', initializePage);
 
-    async function initializePage() {
-        try {
-            // Wait for Supabase client to be available
-            while (!window.supabaseClient) {
-                await new Promise(resolve => setTimeout(resolve, 100));
-            }
-            
-            const supabaseClient = window.supabaseClient;
-            
-            // Check authentication status
-            const { data: { user }, error } = await supabaseClient.auth.getUser();
-            
-            if (error || !user) {
-                showAuthButtons();
-                window.location.href = 'login.html';
-                return;
-            }
-            
-            // User is authenticated - get full profile
-            const { data: profile, error: profileError } = await supabaseClient
-                .from('profiles')
-                .select('*')
-                .eq('id', user.id)
-                .single();
-            
-            if (profileError && profileError.code !== 'PGRST116') {
-                console.error('Error fetching profile:', profileError);
-            }
-
-            // Combine auth user with profile data
-            const userData = {
-                id: user.id,
-                email: user.email,
-                name: profile?.name || user.email.split('@')[0],
-                createdAt: user.created_at || '2025-03-03T06:27:43Z', // Use current timestamp as fallback
-                avatarUrl: profile?.avatar_url,
-                phone: profile?.phone,
-                school: profile?.school,
-                grade: profile?.grade,
-                bio: profile?.bio,
-                notifications: profile?.notifications || {
+    function initializePage() {
+        // Ensure user data exists
+        ensureUserData();
+        
+        // Get user data from localStorage
+        const userData = getUserFromLocalStorage();
+        
+        // Update navbar
+        updateNavbar(userData);
+        
+        // Initialize page-specific functionality
+        if (currentPage === 'profile.html' || currentPage === '') {
+            initializeProfilePage(userData);
+        } else if (currentPage === 'account-settings.html') {
+            initializeAccountSettings();
+        }
+        
+        // Set up logout button
+        setupLogoutButton();
+    }
+    
+    // Ensure user data exists in localStorage
+    function ensureUserData() {
+        if (!localStorage.getItem('userData')) {
+            const demoUser = {
+                email: 'shreyasroy123@example.com', // Using the login you provided
+                name: '',
+                createdAt: '2025-03-02T18:53:40Z', // Using the exact timestamp you provided
+                notifications: {
                     studyReminders: true,
                     newFeatures: true,
                     comments: false,
                     updates: true
                 },
-                privacy: profile?.privacy || {
+                privacy: {
                     profileVisibility: 'public',
                     notesVisibility: 'friends'
                 }
             };
+            localStorage.setItem('userData', JSON.stringify(demoUser));
+        }
+    }
+
+    // Get user data from localStorage
+    function getUserFromLocalStorage() {
+        try {
+            const userDataString = localStorage.getItem('userData');
+            if (!userDataString) return null;
             
-            // Make sure auth buttons are hidden and user profile is shown
-            if (authButtons) authButtons.style.display = 'none';
-            if (userProfile) userProfile.style.display = 'flex';
-            
-            // Update UI with user data
-            updateUserInterface(userData);
-            
-            // Initialize page-specific functionality
-            const currentPage = window.location.pathname.split('/').pop();
-            if (currentPage === 'profile.html' || currentPage === '') {
-                initializeProfilePage(userData, supabaseClient);
-            } else if (currentPage === 'account-settings.html') {
-                initializeAccountSettings(userData, supabaseClient);
-            }
-            
-            // Set up logout button
-            setupLogoutButton(supabaseClient);
-            
+            const userData = JSON.parse(userDataString);
+            return userData;
         } catch (error) {
             console.error('Profile initialization error:', error);
             showAuthButtons();
         }
     }
-    
-    function showAuthButtons() {
-        if (userProfile) userProfile.style.display = 'none';
-        if (authButtons) authButtons.style.display = 'flex';
-    }
-    
-    // Update all UI elements with user data
-    function updateUserInterface(userData) {
-        // Update navbar username
-        if (userName) {
+
+    // Update the navbar with user info
+    function updateNavbar(userData) {
+        if (authButtons) authButtons.style.display = 'none';
+        if (userProfile) userProfile.style.display = 'flex';
+        
+        // Update username in navbar
+        if (userName && userData) {
             userName.textContent = userData.name || userData.email.split('@')[0];
         }
         
-        // Update navbar profile pic
-        updateProfilePic(profilePic, userData);
-        
-        // Update profile page elements if they exist
-        if (profileName) {
-            profileName.textContent = userData.name || userData.email.split('@')[0];
-        }
-        
-        if (memberSince && userData.createdAt) {
-            const createdAt = new Date(userData.createdAt);
-            const formattedDate = createdAt.toLocaleDateString('en-US', { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-            });
-            memberSince.textContent = `Member since: ${formattedDate}`;
-        }
-        
-        if (largeProfilePic) {
-            updateProfilePic(largeProfilePic, userData);
-        }
-    }
-    
-    // Update profile picture element
-    function updateProfilePic(element, userData) {
-        if (!element) return;
-        
-        const initial = (userData.name || userData.email)[0].toUpperCase();
-        
-        if (userData.avatarUrl) {
-            // Use image avatar
-            if (element.tagName !== 'IMG') {
-                const parentElement = element.parentElement;
-                if (!parentElement) return;
-                
-                // Create image element
+        // Update profile pic in navbar - use initial letter if no image
+        if (profilePic && userData) {
+            if (userData.avatarUrl) {
+                // Convert div to img
+                const parentElement = profilePic.parentElement;
                 const newImg = document.createElement('img');
-                newImg.id = element.id;
+                newImg.id = 'profilePic';
                 newImg.src = userData.avatarUrl;
-                newImg.alt = 'Profile';
-                
-                // Copy styles
-                newImg.style.width = element.id === 'largeProfilePic' ? '100%' : '35px';
-                newImg.style.height = element.id === 'largeProfilePic' ? '100%' : '35px';
+                newImg.alt = 'User';
+                newImg.style.width = '35px';
+                newImg.style.height = '35px';
                 newImg.style.borderRadius = '50%';
+                newImg.style.marginRight = '10px';
                 newImg.style.objectFit = 'cover';
                 
-                if (element.id !== 'largeProfilePic') {
-                    newImg.style.marginRight = '10px';
+                // Replace div with img
+                if (parentElement) {
+                    parentElement.replaceChild(newImg, profilePic);
+                    profilePic = newImg;
                 }
                 
-                // Replace element
-                parentElement.replaceChild(newImg, element);
-                
                 // Add error handler
-                newImg.onerror = function() {
-                    setTextAvatar(newImg, userData);
+                profilePic.onerror = () => {
+                    setTextAvatar(profilePic, userData.name || userData.email[0]);
                 };
             } else {
-                // Already an img element
-                element.src = userData.avatarUrl;
-                element.onerror = function() {
-                    setTextAvatar(element, userData);
-                };
+                // Use text avatar with initial
+                setTextAvatar(profilePic, userData.name || userData.email[0]);
             }
-        } else {
-            // Use text avatar
-            setTextAvatar(element, userData);
         }
     }
-    
-    // Set text avatar with initial
-    function setTextAvatar(element, userData) {
-        const initial = (userData.name || userData.email)[0].toUpperCase();
-        const colors = ['#4285F4', '#DB4437', '#F4B400', '#0F9D58', '#9C27B0', '#3F51B5', '#FF5722'];
-        const colorIndex = initial.charCodeAt(0) % colors.length;
+
+    // Create a text-based avatar with user's initial
+    function setTextAvatar(element, name) {
+        // Get first letter for avatar
+        const firstLetter = name.charAt(0).toUpperCase();
         
         if (element.tagName === 'IMG') {
             // Convert img to div
             const parentElement = element.parentElement;
-            if (!parentElement) return;
-            
-            // Create div element
             const newDiv = document.createElement('div');
             newDiv.id = element.id;
-            
-            // Set styles
-            newDiv.style.width = element.id === 'largeProfilePic' ? '100%' : '35px';
-            newDiv.style.height = element.id === 'largeProfilePic' ? '100%' : '35px';
+            newDiv.style.width = '35px';
+            newDiv.style.height = '35px';
             newDiv.style.borderRadius = '50%';
-            newDiv.style.backgroundColor = colors[colorIndex];
+            newDiv.style.backgroundColor = getColorForLetter(firstLetter);
             newDiv.style.color = 'white';
             newDiv.style.display = 'flex';
             newDiv.style.alignItems = 'center';
             newDiv.style.justifyContent = 'center';
+            newDiv.style.marginRight = '10px';
             newDiv.style.fontWeight = 'bold';
+            newDiv.textContent = firstLetter;
             
-            if (element.id === 'largeProfilePic') {
-                newDiv.style.fontSize = '4rem';
-            } else {
-                newDiv.style.marginRight = '10px';
+            if (parentElement) {
+                parentElement.replaceChild(newDiv, element);
             }
-            
-            // Set content
-            newDiv.textContent = initial;
-            
-            // Replace element
-            parentElement.replaceChild(newDiv, element);
         } else {
-            // Just update div
-            element.style.backgroundColor = colors[colorIndex];
-            element.textContent = initial;
+            // Just update the div
+            element.style.backgroundColor = getColorForLetter(firstLetter);
+            element.textContent = firstLetter;
         }
+    }
+    
+    // Get color based on letter
+    function getColorForLetter(letter) {
+        const colors = ['#4285F4', '#DB4437', '#F4B400', '#0F9D58', '#9C27B0', '#3F51B5', '#FF5722'];
+        const index = letter.charCodeAt(0) % colors.length;
+        return colors[index];
     }
 
     // Initialize profile page
-    function initializeProfilePage(userData, supabaseClient) {
+    function initializeProfilePage(userData) {
+        if (!profileName || !memberSince || !largeProfilePic) return;
+        
+        // Set profile name
+        profileName.textContent = userData.name || userData.email.split('@')[0];
+        
+        // Set membership date
+        const createdAt = new Date(userData.createdAt);
+        const formattedDate = createdAt.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+        });
+        memberSince.textContent = `Member since: ${formattedDate}`;
+        
+        // Set large profile picture
+        if (userData.avatarUrl) {
+            // If we have an actual image URL
+            if (largeProfilePic.tagName !== 'IMG') {
+                // Convert div to img
+                const parentElement = largeProfilePic.parentElement;
+                const newImg = document.createElement('img');
+                newImg.id = 'largeProfilePic';
+                newImg.src = userData.avatarUrl;
+                newImg.alt = 'Profile Picture';
+                newImg.style.width = '100%';
+                newImg.style.height = '100%';
+                newImg.style.objectFit = 'cover';
+                
+                if (parentElement) {
+                    parentElement.replaceChild(newImg, largeProfilePic);
+                    largeProfilePic = newImg;
+                }
+                
+                largeProfilePic.onerror = () => {
+                    setLargeTextAvatar(userData.name || userData.email[0]);
+                };
+            } else {
+                largeProfilePic.src = userData.avatarUrl;
+                largeProfilePic.onerror = () => {
+                    setLargeTextAvatar(userData.name || userData.email[0]);
+                };
+            }
+        } else {
+            // Use text avatar
+            setLargeTextAvatar(userData.name || userData.email[0]);
+        }
+        
         // Populate form if it exists
         populateProfileForm(userData);
         
         // Initialize avatar modal
-        initAvatarModal(userData, supabaseClient);
+        initAvatarModal();
     }
     
-    // Populate profile form with user data
+    // Create a large text avatar
+    function setLargeTextAvatar(name) {
+        const firstLetter = name.charAt(0).toUpperCase();
+        
+        if (!largeProfilePic) return;
+        
+        if (largeProfilePic.tagName === 'IMG') {
+            // Convert img to div
+            const parentElement = largeProfilePic.parentElement;
+            const newDiv = document.createElement('div');
+            newDiv.id = 'largeProfilePic';
+            newDiv.style.width = '100%';
+            newDiv.style.height = '100%';
+            newDiv.style.borderRadius = '50%';
+            newDiv.style.backgroundColor = getColorForLetter(firstLetter);
+            newDiv.style.color = 'white';
+            newDiv.style.display = 'flex';
+            newDiv.style.alignItems = 'center';
+            newDiv.style.justifyContent = 'center';
+            newDiv.style.fontSize = '4rem';
+            newDiv.style.fontWeight = 'bold';
+            newDiv.textContent = firstLetter;
+            
+            if (parentElement) {
+                parentElement.replaceChild(newDiv, largeProfilePic);
+                largeProfilePic = newDiv;
+            }
+        } else {
+            // Just update the div
+            largeProfilePic.style.backgroundColor = getColorForLetter(firstLetter);
+            largeProfilePic.textContent = firstLetter;
+        }
+    }
+    
+    // Populate profile form
     function populateProfileForm(userData) {
         const editFullName = document.getElementById('editFullName');
         const editEmail = document.getElementById('editEmail');
@@ -351,422 +367,401 @@ if (typeof window.supabase !== 'undefined') {
         avatarOverlay.addEventListener('click', () => {
             avatarModal.style.display = 'block';
             
-            // Set current avatar as preview
+            // Set current avatar as preview or first letter
+            const userData = getUserFromLocalStorage();
             if (userData.avatarUrl) {
                 avatarPreview.src = userData.avatarUrl;
                 avatarPreview.onerror = () => {
-                    createAvatarPreview(userData, avatarPreview);
+                    createAvatarPreview(userData.name || userData.email[0]);
                 };
             } else {
-                createAvatarPreview(userData, avatarPreview);
+                createAvatarPreview(userData.name || userData.email[0]);
             }
         });
+        
+        // Create avatar preview with letter
+        function createAvatarPreview(name) {
+            const firstLetter = name.charAt(0).toUpperCase();
+            const canvas = document.createElement('canvas');
+            canvas.width = 200;
+            canvas.height = 200;
+            const ctx = canvas.getContext('2d');
+            
+            // Draw background
+            ctx.fillStyle = getColorForLetter(firstLetter);
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw letter
+            ctx.font = 'bold 100px Arial';
+            ctx.fillStyle = '#FFFFFF';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(firstLetter, canvas.width/2, canvas.height/2);
+            
+            // Set as preview
+            avatarPreview.src = canvas.toDataURL('image/png');
+        }
         
         // Close modal when clicking the X
         modalClose.addEventListener('click', () => {
             avatarModal.style.display = 'none';
         });
         
-        // Close modal when clicking outside of it
-        window.addEventListener('click', (event) => {
-            if (event.target === avatarModal) {
-                avatarModal.style.display = 'none';
-            }
-        });
-        
-        // Preview selected image
-        avatarInput.addEventListener('change', () => {
-            const file = avatarInput.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    avatarPreview.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-        
-        // Handle avatar form submission
-        avatarForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const file = avatarInput.files[0];
-            if (!file) {
-                alert('Please select an image');
-                return;
-            }
-            
-            // Show loading state
-            const submitBtn = avatarForm.querySelector('button[type="submit"]');
-            submitBtn.textContent = 'Uploading...';
-            submitBtn.disabled = true;
-            
-            try {
-                // For this demo, we'll use a data URL approach since we can't access actual Supabase storage
-                // In a real implementation with proper Supabase credentials, you'd upload to storage
-                const reader = new FileReader();
-                reader.onload = async (e) => {
-                    const dataUrl = e.target.result;
-                    
-                    try {
-                        // In a real implementation, you'd do:
-                        // Upload to Supabase storage
-                        // const { data, error } = await supabaseClient.storage
-                        //   .from('avatars')
-                        //   .upload(`avatar-${userData.id}.jpg`, file);
-                        
-                        // Instead, we'll simulate by updating the profile with the data URL
-                        const { error } = await supabaseClient
-                            .from('profiles')
-                            .update({ 
-                                avatar_url: dataUrl,
-                                updated_at: new Date('2025-03-03T06:31:45Z').toISOString()
-                            })
-                            .eq('id', userData.id);
-                        
-                        if (error) throw error;
-                        
-                        // Update userData
-                        userData.avatarUrl = dataUrl;
-                        
-                        // Update UI elements
-                        updateProfilePic(profilePic, userData);
-                        updateProfilePic(largeProfilePic, userData);
-                        
-                        // Close modal and reset form
+                // Close modal when clicking outside of it
+                window.addEventListener('click', (event) => {
+                    if (event.target === avatarModal) {
                         avatarModal.style.display = 'none';
+                    }
+                });
+                
+                // Preview selected image
+                avatarInput.addEventListener('change', () => {
+                    const file = avatarInput.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            avatarPreview.src = e.target.result;
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+                
+                // Handle avatar form submission
+                avatarForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    
+                    const file = avatarInput.files[0];
+                    if (!file) {
+                        alert('Please select an image');
+                        return;
+                    }
+                    
+                    // Show loading state
+                    const submitBtn = avatarForm.querySelector('button[type="submit"]');
+                    submitBtn.textContent = 'Uploading...';
+                    submitBtn.disabled = true;
+                    
+                    // Convert the selected file to a data URL
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const newAvatarUrl = e.target.result;
+                        
+                        // Get user data
+                        const userData = getUserFromLocalStorage();
+                        
+                        // Update avatar URL in user data
+                        userData.avatarUrl = newAvatarUrl;
+                        
+                        // Save to localStorage
+                        localStorage.setItem('userData', JSON.stringify(userData));
+                        
+                        // Update UI with the new avatar
+                        if (largeProfilePic.tagName !== 'IMG') {
+                            // Convert div to img
+                            const parentElement = largeProfilePic.parentElement;
+                            const newImg = document.createElement('img');
+                            newImg.id = 'largeProfilePic';
+                            newImg.src = newAvatarUrl;
+                            newImg.alt = 'Profile Picture';
+                            newImg.style.width = '100%';
+                            newImg.style.height = '100%';
+                            newImg.style.objectFit = 'cover';
+                            
+                            if (parentElement) {
+                                parentElement.replaceChild(newImg, largeProfilePic);
+                                largeProfilePic = newImg;
+                            }
+                        } else {
+                            largeProfilePic.src = newAvatarUrl;
+                        }
+                        
+                        // Update navbar profile pic
+                        if (profilePic.tagName !== 'IMG') {
+                            // Convert div to img
+                            const parentElement = profilePic.parentElement;
+                            const newImg = document.createElement('img');
+                            newImg.id = 'profilePic';
+                            newImg.src = newAvatarUrl;
+                            newImg.alt = 'User';
+                            newImg.style.width = '35px';
+                            newImg.style.height = '35px';
+                            newImg.style.borderRadius = '50%';
+                            newImg.style.marginRight = '10px';
+                            newImg.style.objectFit = 'cover';
+                            
+                            if (parentElement) {
+                                parentElement.replaceChild(newImg, profilePic);
+                                profilePic = newImg;
+                            }
+                        } else {
+                            profilePic.src = newAvatarUrl;
+                        }
+                        
+                        // Close modal
+                        avatarModal.style.display = 'none';
+                        
+                        // Reset form
                         avatarForm.reset();
-                        alert('Profile picture updated successfully');
-                    } catch (error) {
-                        console.error('Error updating avatar:', error);
-                        alert('Error updating profile picture. Please try again.');
-                    } finally {
                         submitBtn.textContent = 'Upload';
                         submitBtn.disabled = false;
+                        
+                        // Show success message
+                        alert('Profile picture updated successfully!');
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+        
+            // Initialize account settings
+            function initializeAccountSettings() {
+                // Initialize password form
+                initPasswordForm();
+                
+                // Initialize notification settings
+                initNotificationSettings();
+                
+                // Initialize privacy settings
+                initPrivacySettings();
+                
+                // Initialize danger zone (delete account)
+                initDeleteAccount();
+            }
+        
+            // Initialize password form
+            function initPasswordForm() {
+                const passwordForm = document.getElementById('passwordForm');
+                if (!passwordForm) return;
+                
+                // Initialize password toggles
+                const togglePasswordElements = document.querySelectorAll('.toggle-password');
+                togglePasswordElements.forEach(toggle => {
+                    toggle.addEventListener('click', function() {
+                        const input = this.parentElement.querySelector('input');
+                        if (input.type === 'password') {
+                            input.type = 'text';
+                            this.classList.replace('fa-eye-slash', 'fa-eye');
+                        } else {
+                            input.type = 'password';
+                            this.classList.replace('fa-eye', 'fa-eye-slash');
+                        }
+                    });
+                });
+                
+                // Initialize password strength meter
+                const newPassword = document.getElementById('newPassword');
+                const strengthLevel = document.getElementById('strengthLevel');
+                const strengthText = document.getElementById('strengthText');
+                
+                if (newPassword && strengthLevel && strengthText) {
+                    newPassword.addEventListener('input', () => {
+                        const score = calculatePasswordStrength(newPassword.value);
+                        
+                        // Update strength meter
+                        strengthLevel.style.width = `${score}%`;
+                        
+                        // Update color based on strength
+                        if (score < 25) {
+                            strengthLevel.style.backgroundColor = '#db4437'; // Red
+                            strengthText.textContent = 'Weak password';
+                        } else if (score < 50) {
+                            strengthLevel.style.backgroundColor = '#f4b400'; // Yellow
+                            strengthText.textContent = 'Fair password';
+                        } else if (score < 75) {
+                            strengthLevel.style.backgroundColor = '#0f9d58'; // Green
+                            strengthText.textContent = 'Good password';
+                        } else {
+                            strengthLevel.style.backgroundColor = '#4285f4'; // Blue
+                            strengthText.textContent = 'Strong password';
+                        }
+                    });
+                }
+                
+                // Handle form submission
+                passwordForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    
+                    const currentPassword = document.getElementById('currentPassword').value;
+                    const newPassword = document.getElementById('newPassword').value;
+                    const confirmPassword = document.getElementById('confirmPassword').value;
+                    
+                    // Validate passwords
+                    if (!currentPassword || !newPassword || !confirmPassword) {
+                        alert('Please fill in all password fields');
+                        return;
                     }
-                };
-                reader.readAsDataURL(file);
-                
-            } catch (error) {
-                console.error('Error processing image:', error);
-                alert('Error processing image. Please try again.');
-                submitBtn.textContent = 'Upload';
-                submitBtn.disabled = false;
+                    
+                    if (newPassword !== confirmPassword) {
+                        alert('New passwords do not match');
+                        return;
+                    }
+                    
+                    // Show loading state
+                    const submitBtn = passwordForm.querySelector('button[type="submit"]');
+                    submitBtn.textContent = 'Updating...';
+                    submitBtn.disabled = true;
+                    
+                    // Simulate password update (in real app, this would be an API call)
+                    setTimeout(() => {
+                        // Show success message
+                        alert('Password updated successfully');
+                        
+                        // Reset form
+                        passwordForm.reset();
+                        
+                        // Reset strength meter
+                        if (strengthLevel && strengthText) {
+                            strengthLevel.style.width = '0';
+                            strengthText.textContent = 'Password strength';
+                        }
+                        
+                        // Reset button state
+                        submitBtn.textContent = 'Update Password';
+                        submitBtn.disabled = false;
+                    }, 1000);
+                });
             }
-        });
-    }
-    
-    // Create avatar preview with initial
-    function createAvatarPreview(userData, previewElement) {
-        const initial = (userData.name || userData.email)[0].toUpperCase();
-        const canvas = document.createElement('canvas');
-        canvas.width = 200;
-        canvas.height = 200;
-        const ctx = canvas.getContext('2d');
         
-        // Fill background
-        const colors = ['#4285F4', '#DB4437', '#F4B400', '#0F9D58', '#9C27B0', '#3F51B5', '#FF5722'];
-        const colorIndex = initial.charCodeAt(0) % colors.length;
-        ctx.fillStyle = colors[colorIndex];
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // Draw initial
-        ctx.font = 'bold 100px Arial';
-        ctx.fillStyle = '#FFFFFF';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(initial, canvas.width / 2, canvas.height / 2);
-        
-        // Set as preview
-        previewElement.src = canvas.toDataURL('image/png');
-    }
-    
-    // Initialize account settings
-    function initializeAccountSettings(userData, supabaseClient) {
-        // Initialize password form
-        initPasswordForm(supabaseClient);
-        
-        // Initialize notification settings
-        initNotificationSettings(userData, supabaseClient);
-        
-        // Initialize privacy settings
-        initPrivacySettings(userData, supabaseClient);
-        
-        // Initialize danger zone (delete account)
-        initDeleteAccount(supabaseClient);
-    }
-    
-    // Initialize password form
-    function initPasswordForm(supabaseClient) {
-        const passwordForm = document.getElementById('passwordForm');
-        if (!passwordForm) return;
-        
-        // Initialize password toggles
-        const togglePasswordElements = document.querySelectorAll('.toggle-password');
-        togglePasswordElements.forEach(toggle => {
-            toggle.addEventListener('click', function() {
-                const input = this.parentElement.querySelector('input');
-                if (input.type === 'password') {
-                    input.type = 'text';
-                    this.classList.replace('fa-eye-slash', 'fa-eye');
-                } else {
-                    input.type = 'password';
-                    this.classList.replace('fa-eye', 'fa-eye-slash');
+            // Initialize notification settings
+            function initNotificationSettings() {
+                const saveNotificationBtn = document.getElementById('saveNotificationSettings');
+                if (!saveNotificationBtn) return;
+                
+                // Get user data
+                const userData = getUserFromLocalStorage();
+                
+                // Set initial checkbox states based on user data
+                if (userData.notifications) {
+                    document.getElementById('notifyStudyReminders').checked = userData.notifications.studyReminders;
+                    document.getElementById('notifyNewFeatures').checked = userData.notifications.newFeatures;
+                    document.getElementById('notifyComments').checked = userData.notifications.comments;
+                    document.getElementById('notifyUpdates').checked = userData.notifications.updates;
                 }
-            });
-        });
-        
-        // Initialize password strength meter
-        const newPassword = document.getElementById('newPassword');
-        const strengthLevel = document.getElementById('strengthLevel');
-        const strengthText = document.getElementById('strengthText');
-        
-        if (newPassword && strengthLevel && strengthText) {
-            newPassword.addEventListener('input', () => {
-                const score = calculatePasswordStrength(newPassword.value);
                 
-                // Update strength meter
-                strengthLevel.style.width = `${score}%`;
+                // Handle save button click
+                saveNotificationBtn.addEventListener('click', () => {
+                    // Get checkbox states
+                    const studyReminders = document.getElementById('notifyStudyReminders').checked;
+                    const newFeatures = document.getElementById('notifyNewFeatures').checked;
+                    const comments = document.getElementById('notifyComments').checked;
+                    const updates = document.getElementById('notifyUpdates').checked;
+                    
+                    // Update notification settings
+                    userData.notifications = {
+                        studyReminders,
+                        newFeatures,
+                        comments,
+                        updates
+                    };
+                    
+                    // Save to localStorage
+                    localStorage.setItem('userData', JSON.stringify(userData));
+                    
+                    // Show loading state
+                    saveNotificationBtn.textContent = 'Saving...';
+                    saveNotificationBtn.disabled = true;
+                    
+                    // Simulate API delay
+                    setTimeout(() => {
+                        // Show success message
+                        alert('Notification settings saved');
+                        
+                        // Reset button state
+                        saveNotificationBtn.textContent = 'Save Notification Settings';
+                        saveNotificationBtn.disabled = false;
+                    }, 1000);
+                });
+            }
+        
+            // Initialize privacy settings
+            function initPrivacySettings() {
+                const savePrivacyBtn = document.getElementById('savePrivacySettings');
+                if (!savePrivacyBtn) return;
                 
-                // Update color based on strength
-                if (score < 25) {
-                    strengthLevel.style.backgroundColor = '#db4437'; // Red
-                    strengthText.textContent = 'Weak password';
-                } else if (score < 50) {
-                    strengthLevel.style.backgroundColor = '#f4b400'; // Yellow
-                    strengthText.textContent = 'Fair password';
-                } else if (score < 75) {
-                    strengthLevel.style.backgroundColor = '#0f9d58'; // Green
-                    strengthText.textContent = 'Good password';
-                } else {
-                    strengthLevel.style.backgroundColor = '#4285f4'; // Blue
-                    strengthText.textContent = 'Strong password';
+                // Get user data
+                const userData = getUserFromLocalStorage();
+                
+                // Set initial select values based on user data
+                if (userData.privacy) {
+                    document.getElementById('profileVisibility').value = userData.privacy.profileVisibility || 'public';
+                    document.getElementById('notesVisibility').value = userData.privacy.notesVisibility || 'public';
                 }
-            });
-        }
-        
-        // Handle form submission
-        passwordForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            const currentPassword = document.getElementById('currentPassword').value;
-            const newPassword = document.getElementById('newPassword').value;
-            const confirmPassword = document.getElementById('confirmPassword').value;
-            
-            // Validate passwords
-            if (!currentPassword || !newPassword || !confirmPassword) {
-                alert('Please fill in all password fields');
-                return;
-            }
-            
-            if (newPassword !== confirmPassword) {
-                alert('New passwords do not match');
-                return;
-            }
-            
-            // Show loading state
-            const submitBtn = passwordForm.querySelector('button[type="submit"]');
-            submitBtn.textContent = 'Updating...';
-            submitBtn.disabled = true;
-            
-            try {
-                // In a real implementation with proper Supabase credentials, you'd do:
-                // const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
                 
-                // Simulate an API call with a timeout
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                
-                // Show success message
-                alert('Password updated successfully');
-                
-                // Reset form
-                passwordForm.reset();
-                
-                // Reset strength meter
-                if (strengthLevel) strengthLevel.style.width = '0';
-                if (strengthText) strengthText.textContent = 'Password strength';
-                
-            } catch (error) {
-                console.error('Error updating password:', error);
-                alert('Error updating password. Please check your current password and try again.');
-            } finally {
-                // Reset button state
-                submitBtn.textContent = 'Update Password';
-                submitBtn.disabled = false;
-            }
-        });
-    }
-    
-    // Initialize notification settings
-    function initNotificationSettings(userData, supabaseClient) {
-        const saveNotificationBtn = document.getElementById('saveNotificationSettings');
-        if (!saveNotificationBtn) return;
-        
-        // Set initial checkbox states
-        if (userData.notifications) {
-            const studyReminders = document.getElementById('notifyStudyReminders');
-            const newFeatures = document.getElementById('notifyNewFeatures');
-            const comments = document.getElementById('notifyComments');
-            const updates = document.getElementById('notifyUpdates');
-            
-            if (studyReminders) studyReminders.checked = userData.notifications.studyReminders;
-            if (newFeatures) newFeatures.checked = userData.notifications.newFeatures;
-            if (comments) comments.checked = userData.notifications.comments;
-            if (updates) updates.checked = userData.notifications.updates;
-        }
-        
-        // Handle save button
-        saveNotificationBtn.addEventListener('click', async () => {
-            const studyReminders = document.getElementById('notifyStudyReminders').checked;
-            const newFeatures = document.getElementById('notifyNewFeatures').checked;
-            const comments = document.getElementById('notifyComments').checked;
-            const updates = document.getElementById('notifyUpdates').checked;
-            
-            // Show loading state
-            saveNotificationBtn.textContent = 'Saving...';
-            saveNotificationBtn.disabled = true;
-            
-            try {
-                // In a real implementation with proper Supabase credentials:
-                // const { error } = await supabaseClient
-                //   .from('profiles')
-                //   .update({
-                //     notifications: { studyReminders, newFeatures, comments, updates },
-                //     updated_at: new Date().toISOString()
-                //   })
-                //   .eq('id', userData.id);
-                
-                // Simulate API call
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                
-                // Update local userData
-                userData.notifications = {
-                    studyReminders,
-                    newFeatures,
-                    comments,
-                    updates
-                };
-                
-                // Show success message
-                alert('Notification settings saved');
-                
-            } catch (error) {
-                console.error('Error updating notifications:', error);
-                alert('Error saving notification settings. Please try again.');
-            } finally {
-                // Reset button state
-                saveNotificationBtn.textContent = 'Save Notification Settings';
-                saveNotificationBtn.disabled = false;
-            }
-        });
-    }
-    
-    // Initialize privacy settings
-    function initPrivacySettings(userData, supabaseClient) {
-        const savePrivacyBtn = document.getElementById('savePrivacySettings');
-        if (!savePrivacyBtn) return;
-        
-        // Set initial values
-        if (userData.privacy) {
-            const profileVisibility = document.getElementById('profileVisibility');
-            const notesVisibility = document.getElementById('notesVisibility');
-            
-            if (profileVisibility) profileVisibility.value = userData.privacy.profileVisibility || 'public';
-            if (notesVisibility) notesVisibility.value = userData.privacy.notesVisibility || 'public';
-        }
-                // Handle save button
-                savePrivacyBtn.addEventListener('click', async () => {
+                // Handle save button click
+                savePrivacyBtn.addEventListener('click', () => {
+                    // Get select values
                     const profileVisibility = document.getElementById('profileVisibility').value;
                     const notesVisibility = document.getElementById('notesVisibility').value;
+                    
+                    // Update privacy settings
+                    userData.privacy = {
+                        profileVisibility,
+                        notesVisibility
+                    };
+                    
+                    // Save to localStorage
+                    localStorage.setItem('userData', JSON.stringify(userData));
                     
                     // Show loading state
                     savePrivacyBtn.textContent = 'Saving...';
                     savePrivacyBtn.disabled = true;
                     
-                    try {
-                        // In a real implementation with proper Supabase credentials:
-                        // const { error } = await supabaseClient
-                        //   .from('profiles')
-                        //   .update({
-                        //     privacy: { profileVisibility, notesVisibility },
-                        //     updated_at: new Date().toISOString()
-                        //   })
-                        //   .eq('id', userData.id);
-                        
-                        // Simulate API call
-                        await new Promise(resolve => setTimeout(resolve, 1000));
-                        
-                        // Update local userData
-                        userData.privacy = {
-                            profileVisibility,
-                            notesVisibility
-                        };
-                        
+                    // Simulate API delay
+                    setTimeout(() => {
                         // Show success message
                         alert('Privacy settings saved');
                         
-                    } catch (error) {
-                        console.error('Error updating privacy settings:', error);
-                        alert('Error saving privacy settings. Please try again.');
-                    } finally {
                         // Reset button state
                         savePrivacyBtn.textContent = 'Save Privacy Settings';
                         savePrivacyBtn.disabled = false;
-                    }
+                    }, 1000);
                 });
             }
-            
-            // Initialize delete account
-            function initDeleteAccount(supabaseClient) {
+        
+            // Initialize delete account functionality
+            function initDeleteAccount() {
                 const deleteAccountBtn = document.getElementById('deleteAccount');
                 if (!deleteAccountBtn) return;
                 
-                deleteAccountBtn.addEventListener('click', async () => {
+                deleteAccountBtn.addEventListener('click', () => {
                     // Show confirmation dialog
                     const confirmed = confirm('Are you sure you want to delete your account? This action cannot be undone.');
                     
-                    if (!confirmed) return;
-                    
-                    try {
-                        // In a real implementation with proper Supabase credentials:
-                        // const { error } = await supabaseClient.auth.admin.deleteUser(
-                        //   (await supabaseClient.auth.getUser()).data.user.id
-                        // );
+                    if (confirmed) {
+                        // Get user data
+                        const userData = getUserFromLocalStorage();
                         
-                        // Simulate API call
-                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        // Ask for email confirmation
+                        const emailConfirmation = prompt(`To confirm deletion, please type your email address (${userData.email}):`);
                         
-                        alert('Your account has been deleted. You are now signed out.');
-                        window.location.href = 'index.html';
-                        
-                    } catch (error) {
-                        console.error('Error deleting account:', error);
-                        alert('Error deleting account. Please try again or contact support.');
+                        if (emailConfirmation === userData.email) {
+                            // Clear user data from localStorage
+                            localStorage.removeItem('userData');
+                            
+                            // Show success message
+                            alert('Your account has been deleted. You are now signed out.');
+                            
+                            // Redirect to home page
+                            window.location.href = 'index.html';
+                        } else {
+                            alert('Email address does not match. Account deletion cancelled.');
+                        }
                     }
                 });
             }
             
             // Set up logout button
-            function setupLogoutButton(supabaseClient) {
-                if (!logoutBtn) return;
-                
-                logoutBtn.addEventListener('click', async (e) => {
-                    e.preventDefault();
-                    
-                    try {
-                        // Sign out via Supabase
-                        const { error } = await supabaseClient.auth.signOut();
+            function setupLogoutButton() {
+                if (logoutBtn) {
+                    logoutBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
                         
-                        if (error) throw error;
+                        // Clear user data (in a real app, this would also involve API calls)
+                        localStorage.removeItem('userData');
                         
                         // Redirect to home page
                         window.location.href = 'index.html';
-                        
-                    } catch (error) {
-                        console.error('Error signing out:', error);
-                        alert('Error signing out. Please try again.');
-                    }
-                });
+                    });
+                }
             }
         
             // Calculate password strength score (0-100)
@@ -791,5 +786,27 @@ if (typeof window.supabase !== 'undefined') {
                 if (/[^A-Za-z0-9].*[^A-Za-z0-9]/.test(password)) score += 10; // Multiple special chars
                 
                 return Math.min(score, 100); // Cap at 100
+            }
+            
+            // Set up mobile menu toggle
+            window.showMenu = function() {
+                const navLinks = document.getElementById('navLinks');
+                if (navLinks) {
+                    navLinks.style.right = '0';
+                }
+            };
+        
+            window.hideMenu = function() {
+                const navLinks = document.getElementById('navLinks');
+                if (navLinks) {
+                    navLinks.style.right = '-200px';
+                }
+            };
+        
+            // Update the copyright year in the footer
+            const copyrightElement = document.querySelector('.copyright p');
+            if (copyrightElement) {
+                const currentYear = new Date().getFullYear();
+                copyrightElement.textContent = `© ${currentYear} NotesBuddy. All Rights Reserved.`;
             }
         })();
