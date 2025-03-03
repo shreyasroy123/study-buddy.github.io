@@ -1,8 +1,22 @@
 // Supabase Configuration
 const SUPABASE_URL = 'https://irqmhamkeytbiobbraxh.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlycW1oYW1rZXl0YmlvYmJyYXhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA4NTAxMjYsImV4cCI6MjA1NjQyNjEyNn0.nnSRe3Z1BiZjSOIgOzg3I8zv7TtUmei-bPAELw7eEl8';
-// Create Supabase client
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+document.addEventListener('DOMContentLoaded', async function() {
+    try {
+        // Create the Supabase client
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        // Store in window for access across the site
+        window.supabaseClient = supabaseClient;
+        
+        // Check authentication
+        await checkAuthStatus(supabaseClient);
+    } catch (error) {
+        console.error('Supabase initialization error:', error);
+        showAuthButtons();
+    }
+});
 
 // DOM Elements
 const authButtons = document.getElementById('authButtons');
@@ -12,23 +26,21 @@ const profilePic = document.getElementById('profilePic');
 const logoutBtn = document.getElementById('logoutBtn');
 
 // Check authentication status when page loads
-document.addEventListener('DOMContentLoaded', checkAuthStatus);
-
-async function checkAuthStatus() {
+async function checkAuthStatus(supabaseClient) {
     try {
         // Get current session
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const { data, error } = await supabaseClient.auth.getSession();
         
         if (error) throw error;
 
         // If no active session - show login/signup buttons
-        if (!session) {
+        if (!data.session) {
             showAuthButtons();
             return;
         }
 
         // Get current user
-        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
         
         if (userError || !user) {
             showAuthButtons();
@@ -36,7 +48,7 @@ async function checkAuthStatus() {
         }
 
         // Get user profile data
-        const { data: profile, error: profileError } = await supabase
+        const { data: profile, error: profileError } = await supabaseClient
             .from('profiles')
             .select('*')
             .eq('id', user.id)
@@ -48,6 +60,9 @@ async function checkAuthStatus() {
 
         // User is authenticated - show profile
         showUserProfile(user, profile);
+        
+        // Set up logout button
+        setupLogoutButton(supabaseClient);
         
     } catch (error) {
         console.error('Auth check error:', error);
@@ -63,7 +78,9 @@ function showAuthButtons() {
     // If on protected page, redirect to login
     const currentPage = window.location.pathname.split('/').pop();
     if (['profile.html', 'account-settings.html', 'study-statistics.html'].includes(currentPage)) {
-        window.location.href = 'login.html';
+        setTimeout(() => {
+            window.location.href = 'login.html';
+        }, 100);
     }
 }
 
@@ -92,7 +109,10 @@ function showUserProfile(user, profile) {
             img.style.objectFit = 'cover';
             
             // Replace text avatar with image
-            profilePic.parentElement.replaceChild(img, profilePic);
+            const parent = profilePic.parentElement;
+            if (parent) {
+                parent.replaceChild(img, profilePic);
+            }
             
             // Add error handler
             img.onerror = function() {
@@ -103,14 +123,16 @@ function showUserProfile(user, profile) {
             setTextAvatar(profilePic, user);
         }
     }
-    
-    // Setup logout button
+}
+
+// Setup logout button
+function setupLogoutButton(supabaseClient) {
     if (logoutBtn) {
         logoutBtn.addEventListener('click', async function(e) {
             e.preventDefault();
             
             try {
-                const { error } = await supabase.auth.signOut();
+                const { error } = await supabaseClient.auth.signOut();
                 if (error) throw error;
                 
                 window.location.href = 'index.html';
@@ -144,7 +166,10 @@ function setTextAvatar(element, user) {
         newDiv.style.fontWeight = 'bold';
         newDiv.textContent = initial;
         
-        element.parentElement.replaceChild(newDiv, element);
+        const parent = element.parentElement;
+        if (parent) {
+            parent.replaceChild(newDiv, element);
+        }
     } else {
         // Update div content
         element.textContent = initial;
