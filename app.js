@@ -1,99 +1,100 @@
-// Initialize Supabase
+// Initialize Supabase client
 document.addEventListener('DOMContentLoaded', function() {
+    // Create the Supabase client
+    const supabaseUrl = 'https://jncfbkvxbskyhduvcpit.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlycW1oYW1rZXl0YmlvYmJyYXhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA4NTAxMjYsImV4cCI6MjA1NjQyNjEyNn0.nnSRe3Z1BiZjSOIgOzg3I8zv7TtUmei-bPAELw7eEl8';
     try {
-        // Create Supabase client directly
         const { createClient } = supabase;
+        const client = createClient(supabaseUrl, supabaseKey);
+        window.supabaseClient = client;
         
-        // These should be replaced with your actual Supabase URL and anon key
-        const supabaseUrl = 'https://jncfbkvxbskyhduvcpit.supabase.co';
-        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlycW1oYW1rZXl0YmlvYmJyYXhoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA4NTAxMjYsImV4cCI6MjA1NjQyNjEyNn0.nnSRe3Z1BiZjSOIgOzg3I8zv7TtUmei-bPAELw7eEl8';
-        
-        // Create client
-        const supabaseClient = createClient(supabaseUrl, supabaseKey);
-        
-        // Store in window for access across the site
-        window.supabaseClient = supabaseClient;
-        
-        // Check authentication
-        checkAuthStatus(supabaseClient);
+        // Check auth status
+        checkAuth();
     } catch (error) {
-        console.error('Supabase initialization error:', error);
-        showAuthButtons();
+        console.error("Supabase init error:", error);
     }
 });
 
-// DOM Elements
-const authButtons = document.getElementById('authButtons');
-const userProfile = document.getElementById('userProfile');
-const userName = document.getElementById('userName');
-const profilePic = document.getElementById('profilePic');
-const logoutBtn = document.getElementById('logoutBtn');
-
 // Check authentication status
-async function checkAuthStatus(supabaseClient) {
+async function checkAuth() {
     try {
-        // Get current session from Supabase
-        const { data, error } = await supabaseClient.auth.getSession();
+        const client = window.supabaseClient;
+        const { data: { session }, error } = await client.auth.getSession();
         
-        if (error) throw error;
-
-        // If no active session - show login/signup buttons
-        if (!data.session) {
+        if (error) {
+            console.error("Session error:", error);
             showAuthButtons();
             return;
         }
-
-        // Get current user
-        const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+        
+        if (!session) {
+            showAuthButtons();
+            return;
+        }
+        
+        // User is logged in
+        const { data: { user }, error: userError } = await client.auth.getUser();
         
         if (userError || !user) {
+            console.error("User error:", userError);
             showAuthButtons();
             return;
         }
-
-        // Get user profile data
-        const { data: profile, error: profileError } = await supabaseClient
+        
+        // Get profile data
+        const { data: profile, error: profileError } = await client
             .from('profiles')
             .select('*')
             .eq('user_id', user.id)
             .single();
-            
-        if (profileError && profileError.code !== 'PGRST116') {
-            console.error('Error fetching profile:', profileError);
+        
+        if (profileError) {
+            console.error("Profile error:", profileError);
         }
-
-        // User is authenticated - show profile
-        showUserProfile(user, profile || {});
         
-        // Set up logout button
-        setupLogoutButton(supabaseClient);
+        // Show user info in navbar
+        showUserInfo(user, profile || {});
         
-    } catch (error) {
-        console.error('Auth check error:', error);
+        // Setup logout
+        setupLogout();
+    } catch (err) {
+        console.error("Auth check error:", err);
         showAuthButtons();
     }
 }
 
-// Show auth buttons, hide user profile
+// Show auth buttons (login/signup)
 function showAuthButtons() {
+    const authButtons = document.getElementById('authButtons');
+    const userProfile = document.getElementById('userProfile');
+    
     if (authButtons) authButtons.style.display = 'flex';
     if (userProfile) userProfile.style.display = 'none';
 }
 
-// Hide auth buttons, show user profile
-function showUserProfile(user, profile) {
+// Show user info in navbar
+function showUserInfo(user, profile) {
+    const authButtons = document.getElementById('authButtons');
+    const userProfile = document.getElementById('userProfile');
+    const userName = document.getElementById('userName');
+    const profilePic = document.getElementById('profilePic');
+    
     if (authButtons) authButtons.style.display = 'none';
     if (userProfile) userProfile.style.display = 'flex';
     
-    // Update username
+    // Update username - use profile.username, profile.full_name, or email
     if (userName) {
-        userName.textContent = profile.username || user.email.split('@')[0];
+        const displayName = profile.username || profile.full_name || user.email.split('@')[0];
+        userName.textContent = displayName;
     }
     
     // Update profile picture
     if (profilePic) {
+        const initial = (user.email || 'U')[0].toUpperCase();
+        
+        // If profile has avatar_url, use it
         if (profile.avatar_url) {
-            // Create image element for avatar
+            // Create image element if needed
             if (profilePic.tagName !== 'IMG') {
                 const img = document.createElement('img');
                 img.id = 'profilePic';
@@ -105,80 +106,85 @@ function showUserProfile(user, profile) {
                 img.style.marginRight = '10px';
                 img.style.objectFit = 'cover';
                 
+                // Replace text avatar with image
                 const parent = profilePic.parentElement;
                 if (parent) {
                     parent.replaceChild(img, profilePic);
                 }
                 
+                // Handle image load error
                 img.onerror = function() {
-                    setTextAvatar(this, user);
+                    useInitialAvatar(this, initial);
                 };
             } else {
+                // Update existing img
                 profilePic.src = profile.avatar_url;
                 profilePic.onerror = function() {
-                    setTextAvatar(this, user);
+                    useInitialAvatar(this, initial);
                 };
             }
         } else {
-            // Use text avatar with initial
-            setTextAvatar(profilePic, user);
+            // Use initial-based avatar
+            useInitialAvatar(profilePic, initial);
         }
     }
 }
 
-// Setup logout button
-function setupLogoutButton(supabaseClient) {
-    if (!logoutBtn) return;
-    
-    logoutBtn.addEventListener('click', async function(e) {
-        e.preventDefault();
-        
-        try {
-            // Sign out via Supabase
-            const { error } = await supabaseClient.auth.signOut();
-            
-            if (error) throw error;
-            
-            // Redirect to home page
-            window.location.href = 'index.html';
-            
-        } catch (error) {
-            console.error('Error signing out:', error);
-            alert('Error signing out. Please try again.');
-        }
-    });
-}
-
-// Create text-based avatar with initial
-function setTextAvatar(element, user) {
-    const initial = (user.email || 'U')[0].toUpperCase();
+// Use initial for avatar
+function useInitialAvatar(element, initial) {
     const colors = ['#4285F4', '#DB4437', '#F4B400', '#0F9D58', '#9C27B0', '#3F51B5', '#FF5722'];
     const colorIndex = initial.charCodeAt(0) % colors.length;
     
     if (element.tagName === 'IMG') {
-        // Convert img to div
-        const newDiv = document.createElement('div');
-        newDiv.id = 'profilePic';
-        newDiv.style.width = '35px';
-        newDiv.style.height = '35px';
-        newDiv.style.borderRadius = '50%';
-        newDiv.style.backgroundColor = colors[colorIndex];
-        newDiv.style.color = 'white';
-        newDiv.style.display = 'flex';
-        newDiv.style.alignItems = 'center';
-        newDiv.style.justifyContent = 'center';
-        newDiv.style.marginRight = '10px';
-        newDiv.style.fontWeight = 'bold';
-        newDiv.textContent = initial;
+        // Replace img with div
+        const div = document.createElement('div');
+        div.id = 'profilePic';
+        div.textContent = initial;
+        div.style.width = '35px';
+        div.style.height = '35px';
+        div.style.borderRadius = '50%';
+        div.style.backgroundColor = colors[colorIndex];
+        div.style.color = 'white';
+        div.style.display = 'flex';
+        div.style.alignItems = 'center';
+        div.style.justifyContent = 'center';
+        div.style.marginRight = '10px';
+        div.style.fontWeight = 'bold';
         
         const parent = element.parentElement;
         if (parent) {
-            parent.replaceChild(newDiv, element);
+            parent.replaceChild(div, element);
         }
     } else {
-        // Update div content
+        // Update existing div
         element.textContent = initial;
         element.style.backgroundColor = colors[colorIndex];
+    }
+}
+
+// Setup logout button
+function setupLogout() {
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.removeEventListener('click', handleLogout);
+        logoutBtn.addEventListener('click', handleLogout);
+    }
+}
+
+// Handle logout action
+async function handleLogout(e) {
+    e.preventDefault();
+    
+    try {
+        const { error } = await window.supabaseClient.auth.signOut();
+        
+        if (error) throw error;
+        
+        // Redirect to home
+        window.location.href = 'index.html';
+    } catch (err) {
+        console.error("Logout error:", err);
+        alert("Error signing out. Please try again.");
     }
 }
 
