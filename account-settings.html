@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="profile-styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Supabase JS library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
     <!-- Navbar -->
@@ -98,11 +100,11 @@
                     <h3>Email Notifications</h3>
                     <div class="notification-settings">
                         <div class="notification-option">
-                            <input type="checkbox" id="notifyStudyReminders" checked>
+                            <input type="checkbox" id="notifyStudyReminders">
                             <label for="notifyStudyReminders">Study Reminders</label>
                         </div>
                         <div class="notification-option">
-                            <input type="checkbox" id="notifyNewFeatures" checked>
+                            <input type="checkbox" id="notifyNewFeatures">
                             <label for="notifyNewFeatures">New Features</label>
                         </div>
                         <div class="notification-option">
@@ -110,7 +112,7 @@
                             <label for="notifyComments">Comments on my Notes</label>
                         </div>
                         <div class="notification-option">
-                            <input type="checkbox" id="notifyUpdates" checked>
+                            <input type="checkbox" id="notifyUpdates">
                             <label for="notifyUpdates">Platform Updates</label>
                         </div>
                     </div>
@@ -192,33 +194,7 @@
         </div>
     </footer>
 
-    <script>
-        // Initialize demo login state if not exists
-        window.isLoggedIn = true;
-        
-        // Initialize user data if not exists
-        if (!localStorage.getItem('userData')) {
-            const demoUser = {
-                email: 'shreyasroy123@example.com', // Using the login you provided
-                name: '',
-                createdAt: '2025-03-02T19:06:24Z', // Using your exact updated timestamp
-                notifications: {
-                    studyReminders: true,
-                    newFeatures: true,
-                    comments: false,
-                    updates: true
-                },
-                privacy: {
-                    profileVisibility: 'public',
-                    notesVisibility: 'friends'
-                }
-            };
-            localStorage.setItem('userData', JSON.stringify(demoUser));
-        }
-        </script>
-
     <!-- Load additional scripts -->
-    <script src="app.js"></script>
     <script src="profile.js"></script>
 </body>
 </html>

@@ -5,155 +5,167 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // DOM Elements
-const navLinks = document.getElementById('navLinks');
 const authButtons = document.getElementById('authButtons');
 const userProfile = document.getElementById('userProfile');
-const profilePic = document.getElementById('profilePic');
 const userName = document.getElementById('userName');
+const profilePic = document.getElementById('profilePic');
+const logoutBtn = document.getElementById('logoutBtn');
 
-// Mobile menu toggle
-function showMenu() {
-    navLinks.classList.add('active');
-}
+// Check authentication status when page loads
+document.addEventListener('DOMContentLoaded', checkAuthStatus);
 
-function hideMenu() {
-    navLinks.classList.remove('active');
-}
-
-// Check if user is logged in
-document.addEventListener('DOMContentLoaded', async () => {
-    console.log('Checking auth status...');
-    
+async function checkAuthStatus() {
     try {
-        // Get the current session
-        const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+        // Get current session
+        const { data: { session }, error } = await supabase.auth.getSession();
         
-        if (sessionError) {
-            console.error('Session error:', sessionError);
-            if (authButtons && userProfile) {
-                authButtons.style.display = 'flex';
-                userProfile.style.display = 'none';
-            }
-            return;
-        }
-        
+        if (error) throw error;
+
+        // If no active session - show login/signup buttons
         if (!session) {
-            console.log('No active session');
-            if (authButtons && userProfile) {
-                authButtons.style.display = 'flex';
-                userProfile.style.display = 'none';
-            }
+            showAuthButtons();
             return;
         }
-        
-        console.log('Session found, loading user data');
-        
-        // Session exists, get user
-        const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-        
-        if (userError) {
-            console.error('Error getting user:', userError);
-            if (authButtons && userProfile) {
-                authButtons.style.display = 'flex';
-                userProfile.style.display = 'none';
-            }
-            return;
-        }
-        
-        if (user) {
-            // User is logged in, display profile
-            await displayUserProfile(user);
-        } else {
-            console.log('No user found despite session');
-            if (authButtons && userProfile) {
-                authButtons.style.display = 'flex';
-                userProfile.style.display = 'none';
-            }
-        }
-    } catch (error) {
-        console.error('Auth error:', error.message);
-        if (authButtons && userProfile) {
-            authButtons.style.display = 'flex';
-            userProfile.style.display = 'none';
-        }
-    }
-});
 
-// Display user profile info
-async function displayUserProfile(user) {
-    console.log('Loading profile for user:', user.id);
-    
-    try {
-        // Get user profile from the profiles table
-        const { data, error } = await supabaseClient
+        // Get current user
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        
+        if (userError || !user) {
+            showAuthButtons();
+            return;
+        }
+
+        // Get user profile data
+        const { data: profile, error: profileError } = await supabase
             .from('profiles')
-            .select('full_name, avatar_url, phone')
+            .select('*')
             .eq('id', user.id)
             .single();
-        
-        if (error) {
-            console.error('Error fetching profile:', error);
-            if (userName) userName.textContent = user.email.split('@')[0];
-            if (profilePic) profilePic.src = 'images/default-avatar.png';
-        } else if (data) {
-            console.log('Profile loaded:', data);
             
-            if (userName) userName.textContent = data.full_name || user.email.split('@')[0];
-            
-            if (profilePic) {
-                if (data.avatar_url) {
-                    profilePic.src = data.avatar_url;
-                    // Add error handler for image loading
-                    profilePic.onerror = () => {
-                        profilePic.src = 'images/default-avatar.png';
-                    };
-                } else {
-                    profilePic.src = 'images/default-avatar.png';
-                }
-            }
-        } else {
-            console.warn('No profile found');
-            if (userName) userName.textContent = user.email.split('@')[0];
-            if (profilePic) profilePic.src = 'images/default-avatar.png';
+        if (profileError && profileError.code !== 'PGRST116') {
+            console.error('Error fetching profile:', profileError);
         }
+
+        // User is authenticated - show profile
+        showUserProfile(user, profile);
         
-        if (authButtons && userProfile) {
-            authButtons.style.display = 'none';
-            userProfile.style.display = 'flex';
-        }
     } catch (error) {
-        console.error('Error displaying profile:', error.message);
+        console.error('Auth check error:', error);
+        showAuthButtons();
     }
 }
 
-// Add event listener for user profile dropdown if it exists
-if (userProfile) {
-    userProfile.addEventListener('click', () => {
-        // Implement dropdown functionality if needed
-        console.log('Profile clicked');
-    });
+// Show auth buttons, hide user profile
+function showAuthButtons() {
+    if (authButtons) authButtons.style.display = 'flex';
+    if (userProfile) userProfile.style.display = 'none';
+    
+    // If on protected page, redirect to login
+    const currentPage = window.location.pathname.split('/').pop();
+    if (['profile.html', 'account-settings.html', 'study-statistics.html'].includes(currentPage)) {
+        window.location.href = 'login.html';
+    }
 }
 
-// Add logout functionality
-const logoutBtn = document.getElementById('logoutBtn');
-if (logoutBtn) {
-    logoutBtn.addEventListener('click', async () => {
-        try {
-            const { error } = await supabaseClient.auth.signOut();
-            if (error) throw error;
-            window.location.href = 'index.html';
-        } catch (error) {
-            console.error('Error signing out:', error.message);
-            alert('Failed to sign out. Please try again.');
+// Hide auth buttons, show user profile
+function showUserProfile(user, profile) {
+    if (authButtons) authButtons.style.display = 'none';
+    if (userProfile) userProfile.style.display = 'flex';
+    
+    // Update username
+    if (userName) {
+        userName.textContent = profile?.name || user.email.split('@')[0];
+    }
+    
+    // Update profile picture
+    if (profilePic) {
+        if (profile?.avatar_url) {
+            // Create image element for avatar
+            const img = document.createElement('img');
+            img.id = 'profilePic';
+            img.src = profile.avatar_url;
+            img.alt = 'Profile';
+            img.style.width = '35px';
+            img.style.height = '35px';
+            img.style.borderRadius = '50%';
+            img.style.marginRight = '10px';
+            img.style.objectFit = 'cover';
+            
+            // Replace text avatar with image
+            profilePic.parentElement.replaceChild(img, profilePic);
+            
+            // Add error handler
+            img.onerror = function() {
+                setTextAvatar(this, user);
+            };
+        } else {
+            // Use text avatar with initial
+            setTextAvatar(profilePic, user);
         }
-    });
+    }
+    
+    // Setup logout button
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async function(e) {
+            e.preventDefault();
+            
+            try {
+                const { error } = await supabase.auth.signOut();
+                if (error) throw error;
+                
+                window.location.href = 'index.html';
+            } catch (error) {
+                console.error('Logout error:', error);
+                alert('Error signing out. Please try again.');
+            }
+        });
+    }
 }
 
-// Update copyright year in footer
-document.addEventListener('DOMContentLoaded', () => {
-    const copyright = document.querySelector('.copyright p');
-    if (copyright) {
-        const currentYear = new Date().getFullYear();
-        copyright.innerHTML = `&copy; ${currentYear} NotesBuddy. All Rights Reserved.`;
+// Create text-based avatar with initial
+function setTextAvatar(element, user) {
+    const initial = (user.email || 'U')[0].toUpperCase();
+    const colors = ['#4285F4', '#DB4437', '#F4B400', '#0F9D58', '#9C27B0', '#3F51B5', '#FF5722'];
+    const colorIndex = initial.charCodeAt(0) % colors.length;
+    
+    if (element.tagName === 'IMG') {
+        // Convert img to div
+        const newDiv = document.createElement('div');
+        newDiv.id = 'profilePic';
+        newDiv.style.width = '35px';
+        newDiv.style.height = '35px';
+        newDiv.style.borderRadius = '50%';
+        newDiv.style.backgroundColor = colors[colorIndex];
+        newDiv.style.color = 'white';
+        newDiv.style.display = 'flex';
+        newDiv.style.alignItems = 'center';
+        newDiv.style.justifyContent = 'center';
+        newDiv.style.marginRight = '10px';
+        newDiv.style.fontWeight = 'bold';
+        newDiv.textContent = initial;
+        
+        element.parentElement.replaceChild(newDiv, element);
+    } else {
+        // Update div content
+        element.textContent = initial;
+        element.style.backgroundColor = colors[colorIndex];
     }
-});
+}
+
+// Mobile menu functions
+window.showMenu = function() {
+    const navLinks = document.getElementById('navLinks');
+    if (navLinks) navLinks.style.right = '0';
+};
+
+window.hideMenu = function() {
+    const navLinks = document.getElementById('navLinks');
+    if (navLinks) navLinks.style.right = '-200px';
+};
+
+// Update copyright year
+const copyrightElement = document.querySelector('.copyright p');
+if (copyrightElement) {
+    const currentYear = new Date().getFullYear();
+    copyrightElement.textContent = `© ${currentYear} NotesBuddy. All Rights Reserved.`;
+}

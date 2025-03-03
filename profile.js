@@ -18,11 +18,15 @@ if (typeof window.supabase !== 'undefined') {
     console.error("Supabase client not available. Make sure to include the Supabase JS library.");
 }
 
-// Profile page initialization
+// Profile page initialization with Supabase integration
 (function() {
-    // Current page detection
-    const currentPage = window.location.pathname.split('/').pop();
-
+    // Supabase configuration - these should match your app.js values
+    const SUPABASE_URL = 'https://your-supabase-project-url.supabase.co';
+    const SUPABASE_KEY = 'your-supabase-anon-key';
+    
+    // Initialize Supabase client
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    
     // DOM Elements - Common for all profile pages
     const userProfile = document.getElementById('userProfile');
     const authButtons = document.getElementById('authButtons');
@@ -34,140 +38,167 @@ if (typeof window.supabase !== 'undefined') {
     const profileName = document.getElementById('profileName');
     const memberSince = document.getElementById('memberSince');
     const largeProfilePic = document.getElementById('largeProfilePic');
-    const avatarOverlay = document.querySelector('.avatar-overlay');
-    const avatarModal = document.getElementById('avatarModal');
-
+    
     // Initialize the page
     document.addEventListener('DOMContentLoaded', initializePage);
 
-    function initializePage() {
-        // Ensure user data exists
-        ensureUserData();
-        
-        // Get user data from localStorage
-        const userData = getUserFromLocalStorage();
-        
-        // Update navbar
-        updateNavbar(userData);
-        
-        // Initialize page-specific functionality
-        if (currentPage === 'profile.html' || currentPage === '') {
-            initializeProfilePage(userData);
-        } else if (currentPage === 'account-settings.html') {
-            initializeAccountSettings();
-        }
-        
-        // Set up logout button
-        setupLogoutButton();
-    }
-    
-    // Ensure user data exists in localStorage
-    function ensureUserData() {
-        if (!localStorage.getItem('userData')) {
-            const demoUser = {
-                email: 'shreyasroy123@example.com', // Using the login you provided
-                name: '',
-                createdAt: '2025-03-02T18:53:40Z', // Using the exact timestamp you provided
-                notifications: {
+    async function initializePage() {
+        try {
+            // Check authentication status
+            const { data: { user }, error } = await supabase.auth.getUser();
+            
+            if (error || !user) {
+                showAuthButtons();
+                redirectToLogin();
+                return;
+            }
+            
+            // User is authenticated - get full profile
+            const { data: profile, error: profileError } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', user.id)
+                .single();
+            
+            if (profileError) {
+                console.error('Error fetching profile:', profileError);
+            }
+
+            // Combine auth user with profile data
+            const userData = {
+                id: user.id,
+                email: user.email,
+                name: profile?.name || user.email.split('@')[0],
+                createdAt: user.created_at,
+                avatarUrl: profile?.avatar_url,
+                phone: profile?.phone,
+                school: profile?.school,
+                grade: profile?.grade,
+                bio: profile?.bio,
+                notifications: profile?.notifications || {
                     studyReminders: true,
                     newFeatures: true,
                     comments: false,
                     updates: true
                 },
-                privacy: {
+                privacy: profile?.privacy || {
                     profileVisibility: 'public',
                     notesVisibility: 'friends'
                 }
             };
-            localStorage.setItem('userData', JSON.stringify(demoUser));
-        }
-    }
-
-    // Get user data from localStorage
-    function getUserFromLocalStorage() {
-        try {
-            const userDataString = localStorage.getItem('userData');
-            if (!userDataString) return null;
             
-            const userData = JSON.parse(userDataString);
-            return userData;
+            // Update UI with user data
+            showUserProfile(userData);
+            
+            // Initialize page-specific functionality
+            const currentPage = window.location.pathname.split('/').pop();
+            if (currentPage === 'profile.html' || currentPage === '') {
+                initializeProfilePage(userData);
+            } else if (currentPage === 'account-settings.html') {
+                initializeAccountSettings(userData);
+            }
+            
+            // Set up logout button
+            setupLogoutButton();
+            
         } catch (error) {
-            console.error('Error getting user data from localStorage:', error);
-            return null;
+            console.error('Authentication error:', error);
+            showAuthButtons();
+            redirectToLogin();
         }
     }
-
-    // Update the navbar with user info
-    function updateNavbar(userData) {
+    
+    function showAuthButtons() {
+        if (userProfile) userProfile.style.display = 'none';
+        if (authButtons) authButtons.style.display = 'flex';
+    }
+    
+    function showUserProfile(userData) {
         if (authButtons) authButtons.style.display = 'none';
         if (userProfile) userProfile.style.display = 'flex';
         
         // Update username in navbar
-        if (userName && userData) {
+        if (userName) {
             userName.textContent = userData.name || userData.email.split('@')[0];
         }
         
-        // Update profile pic in navbar - use initial letter if no image
-        if (profilePic && userData) {
-            if (userData.avatarUrl) {
-                // Convert div to img
-                const parentElement = profilePic.parentElement;
+        // Update navbar profile picture
+        updateProfilePic(profilePic, userData);
+    }
+    
+    function redirectToLogin() {
+        setTimeout(() => {
+            window.location.href = 'login.html';
+        }, 2000);
+    }
+    
+    // Update profile picture element with user data
+    function updateProfilePic(element, userData) {
+        if (!element) return;
+        
+        if (userData.avatarUrl) {
+            // If user has an avatar URL, convert to image
+            if (element.tagName !== 'IMG') {
+                const parentElement = element.parentElement;
                 const newImg = document.createElement('img');
-                newImg.id = 'profilePic';
+                newImg.id = element.id;
                 newImg.src = userData.avatarUrl;
                 newImg.alt = 'User';
-                newImg.style.width = '35px';
-                newImg.style.height = '35px';
+                newImg.style.width = element.style.width;
+                newImg.style.height = element.style.height;
                 newImg.style.borderRadius = '50%';
                 newImg.style.marginRight = '10px';
                 newImg.style.objectFit = 'cover';
                 
-                // Replace div with img
                 if (parentElement) {
-                    parentElement.replaceChild(newImg, profilePic);
-                    profilePic = newImg;
+                    parentElement.replaceChild(newImg, element);
                 }
                 
-                // Add error handler
-                profilePic.onerror = () => {
-                    setTextAvatar(profilePic, userData.name || userData.email[0]);
+                // Add error handler in case image fails to load
+                newImg.onerror = () => {
+                    setTextAvatar(newImg, userData);
                 };
             } else {
-                // Use text avatar with initial
-                setTextAvatar(profilePic, userData.name || userData.email[0]);
+                // Already an img element
+                element.src = userData.avatarUrl;
+                element.onerror = () => {
+                    setTextAvatar(element, userData);
+                };
             }
+        } else {
+            // No avatar URL, use text avatar
+            setTextAvatar(element, userData);
         }
     }
-
-    // Create a text-based avatar with user's initial
-    function setTextAvatar(element, name) {
-        // Get first letter for avatar
-        const firstLetter = name.charAt(0).toUpperCase();
+    
+    // Set a text-based avatar with user's initial
+    function setTextAvatar(element, userData) {
+        const initial = (userData.name || userData.email)[0].toUpperCase();
         
         if (element.tagName === 'IMG') {
             // Convert img to div
             const parentElement = element.parentElement;
             const newDiv = document.createElement('div');
             newDiv.id = element.id;
-            newDiv.style.width = '35px';
-            newDiv.style.height = '35px';
+            newDiv.style.width = element.style.width || '35px';
+            newDiv.style.height = element.style.height || '35px';
             newDiv.style.borderRadius = '50%';
-            newDiv.style.backgroundColor = getColorForLetter(firstLetter);
+            newDiv.style.backgroundColor = getColorForLetter(initial);
             newDiv.style.color = 'white';
             newDiv.style.display = 'flex';
             newDiv.style.alignItems = 'center';
             newDiv.style.justifyContent = 'center';
             newDiv.style.marginRight = '10px';
             newDiv.style.fontWeight = 'bold';
-            newDiv.textContent = firstLetter;
+            newDiv.textContent = initial;
             
             if (parentElement) {
                 parentElement.replaceChild(newDiv, element);
             }
         } else {
             // Just update the div
-            element.style.backgroundColor = getColorForLetter(firstLetter);
-            element.textContent = firstLetter;
+            element.style.backgroundColor = getColorForLetter(initial);
+            element.textContent = initial;
         }
     }
     
@@ -180,95 +211,33 @@ if (typeof window.supabase !== 'undefined') {
 
     // Initialize profile page
     function initializeProfilePage(userData) {
-        if (!profileName || !memberSince || !largeProfilePic) return;
+        if (profileName) {
+            profileName.textContent = userData.name || userData.email.split('@')[0];
+        }
         
-        // Set profile name
-        profileName.textContent = userData.name || userData.email.split('@')[0];
+        if (memberSince) {
+            const createdAt = new Date(userData.createdAt);
+            const formattedDate = createdAt.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+            memberSince.textContent = `Member since: ${formattedDate}`;
+        }
         
-        // Set membership date
-        const createdAt = new Date(userData.createdAt);
-        const formattedDate = createdAt.toLocaleDateString('en-US', { 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-        });
-        memberSince.textContent = `Member since: ${formattedDate}`;
-        
-        // Set large profile picture
-        if (userData.avatarUrl) {
-            // If we have an actual image URL
-            if (largeProfilePic.tagName !== 'IMG') {
-                // Convert div to img
-                const parentElement = largeProfilePic.parentElement;
-                const newImg = document.createElement('img');
-                newImg.id = 'largeProfilePic';
-                newImg.src = userData.avatarUrl;
-                newImg.alt = 'Profile Picture';
-                newImg.style.width = '100%';
-                newImg.style.height = '100%';
-                newImg.style.objectFit = 'cover';
-                
-                if (parentElement) {
-                    parentElement.replaceChild(newImg, largeProfilePic);
-                    largeProfilePic = newImg;
-                }
-                
-                largeProfilePic.onerror = () => {
-                    setLargeTextAvatar(userData.name || userData.email[0]);
-                };
-            } else {
-                largeProfilePic.src = userData.avatarUrl;
-                largeProfilePic.onerror = () => {
-                    setLargeTextAvatar(userData.name || userData.email[0]);
-                };
-            }
-        } else {
-            // Use text avatar
-            setLargeTextAvatar(userData.name || userData.email[0]);
+        if (largeProfilePic) {
+            // Update large profile picture
+            updateProfilePic(largeProfilePic, userData);
         }
         
         // Populate form if it exists
         populateProfileForm(userData);
         
         // Initialize avatar modal
-        initAvatarModal();
+        initAvatarModal(userData);
     }
     
-    // Create a large text avatar
-    function setLargeTextAvatar(name) {
-        const firstLetter = name.charAt(0).toUpperCase();
-        
-        if (!largeProfilePic) return;
-        
-        if (largeProfilePic.tagName === 'IMG') {
-            // Convert img to div
-            const parentElement = largeProfilePic.parentElement;
-            const newDiv = document.createElement('div');
-            newDiv.id = 'largeProfilePic';
-            newDiv.style.width = '100%';
-            newDiv.style.height = '100%';
-            newDiv.style.borderRadius = '50%';
-            newDiv.style.backgroundColor = getColorForLetter(firstLetter);
-            newDiv.style.color = 'white';
-            newDiv.style.display = 'flex';
-            newDiv.style.alignItems = 'center';
-            newDiv.style.justifyContent = 'center';
-            newDiv.style.fontSize = '4rem';
-            newDiv.style.fontWeight = 'bold';
-            newDiv.textContent = firstLetter;
-            
-            if (parentElement) {
-                parentElement.replaceChild(newDiv, largeProfilePic);
-                largeProfilePic = newDiv;
-            }
-        } else {
-            // Just update the div
-            largeProfilePic.style.backgroundColor = getColorForLetter(firstLetter);
-            largeProfilePic.textContent = firstLetter;
-        }
-    }
-    
-    // Populate profile form
+    // Populate profile form with user data
     function populateProfileForm(userData) {
         const editFullName = document.getElementById('editFullName');
         const editEmail = document.getElementById('editEmail');
@@ -288,13 +257,13 @@ if (typeof window.supabase !== 'undefined') {
         if (editBio) editBio.value = userData.bio || '';
         
         // Add form submission handler
-        profileForm.addEventListener('submit', function(e) {
+        profileForm.addEventListener('submit', (e) => {
             handleProfileFormSubmit(e, userData);
         });
     }
     
     // Handle profile form submission
-    function handleProfileFormSubmit(e, userData) {
+    async function handleProfileFormSubmit(e, userData) {
         e.preventDefault();
         
         const editFullName = document.getElementById('editFullName');
@@ -304,11 +273,15 @@ if (typeof window.supabase !== 'undefined') {
         const editBio = document.getElementById('editBio');
         
         // Get form data
-        const fullName = editFullName ? editFullName.value : '';
-        const phone = editPhone ? editPhone.value : '';
-        const school = editSchool ? editSchool.value : '';
-        const grade = editGrade ? editGrade.value : '';
-        const bio = editBio ? editBio.value : '';
+        const updates = {
+            id: userData.id,
+            name: editFullName ? editFullName.value : userData.name,
+            phone: editPhone ? editPhone.value : userData.phone,
+            school: editSchool ? editSchool.value : userData.school,
+            grade: editGrade ? editGrade.value : userData.grade,
+            bio: editBio ? editBio.value : userData.bio,
+            updated_at: new Date().toISOString()
+        };
         
         // Show loading state
         const submitBtn = e.target.querySelector('button[type="submit"]');
@@ -317,40 +290,44 @@ if (typeof window.supabase !== 'undefined') {
             submitBtn.disabled = true;
         }
         
-        // Update user data
-        userData.name = fullName;
-        userData.phone = phone;
-        userData.school = school;
-        userData.grade = grade;
-        userData.bio = bio;
-        
-        // Save to localStorage for persistence
-        localStorage.setItem('userData', JSON.stringify(userData));
-        
-        // Update UI
-        if (profileName) {
-            profileName.textContent = fullName || userData.email.split('@')[0];
-        }
-        
-        if (userName) {
-            userName.textContent = fullName || userData.email.split('@')[0];
-        }
-        
-        // Simulate API delay
-        setTimeout(() => {
+        try {
+            // Update the profile in Supabase
+            const { error } = await supabase
+                .from('profiles')
+                .upsert(updates);
+            
+            if (error) throw error;
+            
+            // Update local userData
+            Object.assign(userData, updates);
+            
+            // Update UI
+            if (profileName) {
+                profileName.textContent = userData.name || userData.email.split('@')[0];
+            }
+            if (userName) {
+                userName.textContent = userData.name || userData.email.split('@')[0];
+            }
+            
             // Show success message
             alert('Profile updated successfully');
-            
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            alert('Error updating profile. Please try again.');
+        } finally {
             // Reset button state
             if (submitBtn) {
                 submitBtn.textContent = 'Save Changes';
                 submitBtn.disabled = false;
             }
-        }, 1000);
+        }
     }
     
     // Initialize avatar modal
-    function initAvatarModal() {
+    function initAvatarModal(userData) {
+        const avatarOverlay = document.querySelector('.avatar-overlay');
+        const avatarModal = document.getElementById('avatarModal');
+        
         if (!avatarOverlay || !avatarModal) return;
         
         const modalClose = document.querySelector('#avatarModal .close');
@@ -364,446 +341,461 @@ if (typeof window.supabase !== 'undefined') {
         avatarOverlay.addEventListener('click', () => {
             avatarModal.style.display = 'block';
             
-            // Set current avatar as preview or first letter
-            const userData = getUserFromLocalStorage();
+            // Set current avatar as preview
             if (userData.avatarUrl) {
                 avatarPreview.src = userData.avatarUrl;
                 avatarPreview.onerror = () => {
-                    createAvatarPreview(userData.name || userData.email[0]);
+                    createAvatarPreview(userData, avatarPreview);
                 };
             } else {
-                createAvatarPreview(userData.name || userData.email[0]);
+                createAvatarPreview(userData, avatarPreview);
             }
         });
-        
-        // Create avatar preview with letter
-        function createAvatarPreview(name) {
-            const firstLetter = name.charAt(0).toUpperCase();
-            const canvas = document.createElement('canvas');
-            canvas.width = 200;
-            canvas.height = 200;
-            const ctx = canvas.getContext('2d');
-            
-            // Draw background
-            ctx.fillStyle = getColorForLetter(firstLetter);
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            
-            // Draw letter
-            ctx.font = 'bold 100px Arial';
-            ctx.fillStyle = '#FFFFFF';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(firstLetter, canvas.width/2, canvas.height/2);
-            
-            // Set as preview
-            avatarPreview.src = canvas.toDataURL('image/png');
-        }
         
         // Close modal when clicking the X
         modalClose.addEventListener('click', () => {
             avatarModal.style.display = 'none';
         });
         
-               // Close modal when clicking outside of it
-               window.addEventListener('click', (event) => {
-                if (event.target === avatarModal) {
-                    avatarModal.style.display = 'none';
-                }
-            });
-            
-            // Preview selected image
-            avatarInput.addEventListener('change', () => {
-                const file = avatarInput.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        avatarPreview.src = e.target.result;
-                    };
-                    reader.readAsDataURL(file);
-                }
-            });
-            
-            // Handle avatar form submission
-            avatarForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                
-                const file = avatarInput.files[0];
-                if (!file) {
-                    alert('Please select an image');
-                    return;
-                }
-                
-                // Show loading state
-                const submitBtn = avatarForm.querySelector('button[type="submit"]');
-                submitBtn.textContent = 'Uploading...';
-                submitBtn.disabled = true;
-                
-                // Convert the selected file to a data URL
+        // Close modal when clicking outside of it
+        window.addEventListener('click', (event) => {
+            if (event.target === avatarModal) {
+                avatarModal.style.display = 'none';
+            }
+        });
+        
+        // Preview selected image
+        avatarInput.addEventListener('change', () => {
+            const file = avatarInput.files[0];
+            if (file) {
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    const newAvatarUrl = e.target.result;
-                    
-                    // Get user data
-                    const userData = getUserFromLocalStorage();
-                    
-                    // Update avatar URL in user data
-                    userData.avatarUrl = newAvatarUrl;
-                    
-                    // Save to localStorage
-                    localStorage.setItem('userData', JSON.stringify(userData));
-                    
-                    // Update UI with the new avatar
-                    if (largeProfilePic.tagName !== 'IMG') {
-                        // Convert div to img
-                        const parentElement = largeProfilePic.parentElement;
-                        const newImg = document.createElement('img');
-                        newImg.id = 'largeProfilePic';
-                        newImg.src = newAvatarUrl;
-                        newImg.alt = 'Profile Picture';
-                        newImg.style.width = '100%';
-                        newImg.style.height = '100%';
-                        newImg.style.objectFit = 'cover';
-                        
-                        if (parentElement) {
-                            parentElement.replaceChild(newImg, largeProfilePic);
-                            largeProfilePic = newImg;
-                        }
-                    } else {
-                        largeProfilePic.src = newAvatarUrl;
-                    }
-                    
-                    // Update navbar profile pic
-                    if (profilePic.tagName !== 'IMG') {
-                        // Convert div to img
-                        const parentElement = profilePic.parentElement;
-                        const newImg = document.createElement('img');
-                        newImg.id = 'profilePic';
-                        newImg.src = newAvatarUrl;
-                        newImg.alt = 'User';
-                        newImg.style.width = '35px';
-                        newImg.style.height = '35px';
-                        newImg.style.borderRadius = '50%';
-                        newImg.style.marginRight = '10px';
-                        newImg.style.objectFit = 'cover';
-                        
-                        if (parentElement) {
-                            parentElement.replaceChild(newImg, profilePic);
-                            profilePic = newImg;
-                        }
-                    } else {
-                        profilePic.src = newAvatarUrl;
-                    }
-                    
-                    // Close modal
-                    avatarModal.style.display = 'none';
-                    
-                    // Reset form
-                    avatarForm.reset();
-                    submitBtn.textContent = 'Upload';
-                    submitBtn.disabled = false;
-                    
-                    // Show success message
-                    alert('Profile picture updated successfully!');
+                    avatarPreview.src = e.target.result;
                 };
                 reader.readAsDataURL(file);
-            });
-        }
-    
-        // Initialize account settings
-        function initializeAccountSettings() {
-            // Initialize password form
-            initPasswordForm();
-            
-            // Initialize notification settings
-            initNotificationSettings();
-            
-            // Initialize privacy settings
-            initPrivacySettings();
-            
-            // Initialize danger zone (delete account)
-            initDeleteAccount();
-        }
-    
-        // Initialize password form
-        function initPasswordForm() {
-            const passwordForm = document.getElementById('passwordForm');
-            if (!passwordForm) return;
-            
-            // Initialize password toggles
-            const togglePasswordElements = document.querySelectorAll('.toggle-password');
-            togglePasswordElements.forEach(toggle => {
-                toggle.addEventListener('click', function() {
-                    const input = this.parentElement.querySelector('input');
-                    if (input.type === 'password') {
-                        input.type = 'text';
-                        this.classList.replace('fa-eye-slash', 'fa-eye');
-                    } else {
-                        input.type = 'password';
-                        this.classList.replace('fa-eye', 'fa-eye-slash');
-                    }
-                });
-            });
-            
-            // Initialize password strength meter
-            const newPassword = document.getElementById('newPassword');
-            const strengthLevel = document.getElementById('strengthLevel');
-            const strengthText = document.getElementById('strengthText');
-            
-            if (newPassword && strengthLevel && strengthText) {
-                newPassword.addEventListener('input', () => {
-                    const score = calculatePasswordStrength(newPassword.value);
-                    
-                    // Update strength meter
-                    strengthLevel.style.width = `${score}%`;
-                    
-                    // Update color based on strength
-                    if (score < 25) {
-                        strengthLevel.style.backgroundColor = '#db4437'; // Red
-                        strengthText.textContent = 'Weak password';
-                    } else if (score < 50) {
-                        strengthLevel.style.backgroundColor = '#f4b400'; // Yellow
-                        strengthText.textContent = 'Fair password';
-                    } else if (score < 75) {
-                        strengthLevel.style.backgroundColor = '#0f9d58'; // Green
-                        strengthText.textContent = 'Good password';
-                    } else {
-                        strengthLevel.style.backgroundColor = '#4285f4'; // Blue
-                        strengthText.textContent = 'Strong password';
-                    }
-                });
             }
-            
-            // Handle form submission
-            passwordForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                
-                const currentPassword = document.getElementById('currentPassword').value;
-                const newPassword = document.getElementById('newPassword').value;
-                const confirmPassword = document.getElementById('confirmPassword').value;
-                
-                // Validate passwords
-                if (!currentPassword || !newPassword || !confirmPassword) {
-                    alert('Please fill in all password fields');
-                    return;
-                }
-                
-                if (newPassword !== confirmPassword) {
-                    alert('New passwords do not match');
-                    return;
-                }
-                
-                // Show loading state
-                const submitBtn = passwordForm.querySelector('button[type="submit"]');
-                submitBtn.textContent = 'Updating...';
-                submitBtn.disabled = true;
-                
-                // Simulate password update (in real app, this would be an API call)
-                setTimeout(() => {
-                    // Show success message
-                    alert('Password updated successfully');
-                    
-                    // Reset form
-                    passwordForm.reset();
-                    
-                    // Reset strength meter
-                    if (strengthLevel && strengthText) {
-                        strengthLevel.style.width = '0';
-                        strengthText.textContent = 'Password strength';
-                    }
-                    
-                    // Reset button state
-                    submitBtn.textContent = 'Update Password';
-                    submitBtn.disabled = false;
-                }, 1000);
-            });
-        }
-    
-        // Initialize notification settings
-        function initNotificationSettings() {
-            const saveNotificationBtn = document.getElementById('saveNotificationSettings');
-            if (!saveNotificationBtn) return;
-            
-            // Get user data
-            const userData = getUserFromLocalStorage();
-            
-            // Set initial checkbox states based on user data
-            if (userData.notifications) {
-                document.getElementById('notifyStudyReminders').checked = userData.notifications.studyReminders;
-                document.getElementById('notifyNewFeatures').checked = userData.notifications.newFeatures;
-                document.getElementById('notifyComments').checked = userData.notifications.comments;
-                document.getElementById('notifyUpdates').checked = userData.notifications.updates;
-            }
-            
-            // Handle save button click
-            saveNotificationBtn.addEventListener('click', () => {
-                // Get checkbox states
-                const studyReminders = document.getElementById('notifyStudyReminders').checked;
-                const newFeatures = document.getElementById('notifyNewFeatures').checked;
-                const comments = document.getElementById('notifyComments').checked;
-                const updates = document.getElementById('notifyUpdates').checked;
-                
-                // Update notification settings
-                userData.notifications = {
-                    studyReminders,
-                    newFeatures,
-                    comments,
-                    updates
-                };
-                
-                // Save to localStorage
-                localStorage.setItem('userData', JSON.stringify(userData));
-                
-                // Show loading state
-                saveNotificationBtn.textContent = 'Saving...';
-                saveNotificationBtn.disabled = true;
-                
-                // Simulate API delay
-                setTimeout(() => {
-                    // Show success message
-                    alert('Notification settings saved');
-                    
-                    // Reset button state
-                    saveNotificationBtn.textContent = 'Save Notification Settings';
-                    saveNotificationBtn.disabled = false;
-                }, 1000);
-            });
-        }
-    
-        // Initialize privacy settings
-        function initPrivacySettings() {
-            const savePrivacyBtn = document.getElementById('savePrivacySettings');
-            if (!savePrivacyBtn) return;
-            
-            // Get user data
-            const userData = getUserFromLocalStorage();
-            
-            // Set initial select values based on user data
-            if (userData.privacy) {
-                document.getElementById('profileVisibility').value = userData.privacy.profileVisibility || 'public';
-                document.getElementById('notesVisibility').value = userData.privacy.notesVisibility || 'public';
-            }
-            
-            // Handle save button click
-            savePrivacyBtn.addEventListener('click', () => {
-                // Get select values
-                const profileVisibility = document.getElementById('profileVisibility').value;
-                const notesVisibility = document.getElementById('notesVisibility').value;
-                
-                // Update privacy settings
-                userData.privacy = {
-                    profileVisibility,
-                    notesVisibility
-                };
-                
-                // Save to localStorage
-                localStorage.setItem('userData', JSON.stringify(userData));
-                
-                // Show loading state
-                savePrivacyBtn.textContent = 'Saving...';
-                savePrivacyBtn.disabled = true;
-                
-                // Simulate API delay
-                setTimeout(() => {
-                    // Show success message
-                    alert('Privacy settings saved');
-                    
-                    // Reset button state
-                    savePrivacyBtn.textContent = 'Save Privacy Settings';
-                    savePrivacyBtn.disabled = false;
-                }, 1000);
-            });
-        }
-    
-        // Initialize delete account functionality
-        function initDeleteAccount() {
-            const deleteAccountBtn = document.getElementById('deleteAccount');
-            if (!deleteAccountBtn) return;
-            
-            deleteAccountBtn.addEventListener('click', () => {
-                // Show confirmation dialog
-                const confirmed = confirm('Are you sure you want to delete your account? This action cannot be undone.');
-                
-                if (confirmed) {
-                    // Get user data
-                    const userData = getUserFromLocalStorage();
-                    
-                    // Ask for email confirmation
-                    const emailConfirmation = prompt(`To confirm deletion, please type your email address (${userData.email}):`);
-                    
-                    if (emailConfirmation === userData.email) {
-                        // Clear user data from localStorage
-                        localStorage.removeItem('userData');
-                        
-                        // Show success message
-                        alert('Your account has been deleted. You are now signed out.');
-                        
-                        // Redirect to home page
-                        window.location.href = 'index.html';
-                    } else {
-                        alert('Email address does not match. Account deletion cancelled.');
-                    }
-                }
-            });
-        }
+        });
         
-        // Set up logout button
-        function setupLogoutButton() {
-            if (logoutBtn) {
-                logoutBtn.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    
-                    // Clear user data (in a real app, this would also involve API calls)
-                    localStorage.removeItem('userData');
-                    
-                    // Redirect to home page
-                    window.location.href = 'index.html';
-                });
+        // Handle avatar form submission
+        avatarForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const file = avatarInput.files[0];
+            if (!file) {
+                alert('Please select an image');
+                return;
             }
-        }
+            
+            // Show loading state
+            const submitBtn = avatarForm.querySelector('button[type="submit"]');
+            submitBtn.textContent = 'Uploading...';
+            submitBtn.disabled = true;
+            
+            try {
+                // Upload the image to Supabase Storage
+                const fileExt = file.name.split('.').pop();
+                const fileName = `${userData.id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+                const filePath = `avatars/${fileName}`;
+                
+                // Upload to storage
+                const { error: uploadError } = await supabase.storage
+                    .from('avatars')
+                    .upload(filePath, file);
+                
+                if (uploadError) throw uploadError;
+                
+                // Get the public URL
+                const { data: { publicUrl } } = supabase.storage
+                    .from('avatars')
+                    .getPublicUrl(filePath);
+                
+                // Update profile with new avatar URL
+                const { error: updateError } = await supabase
+                    .from('profiles')
+                    .update({ avatar_url: publicUrl })
+                    .eq('id', userData.id);
+                
+                if (updateError) throw updateError;
+                
+                // Update local userData
+                userData.avatarUrl = publicUrl;
+                
+                // Update UI
+                updateProfilePic(profilePic, userData);
+                updateProfilePic(largeProfilePic, userData);
+                
+                // Close modal and show success
+                avatarModal.style.display = 'none';
+                alert('Profile picture updated successfully!');
+                
+            } catch (error) {
+                console.error('Error uploading avatar:', error);
+                alert('Error uploading image. Please try again.');
+            } finally {
+                // Reset form and button
+                avatarForm.reset();
+                submitBtn.textContent = 'Upload';
+                submitBtn.disabled = false;
+            }
+        });
+    }
     
-        // Calculate password strength score (0-100)
-        function calculatePasswordStrength(password) {
-            if (!password) return 0;
-            
-            let score = 0;
-            
-            // Length check
-            score += Math.min(password.length * 5, 30);
-            
-            // Character variety
-            if (/[A-Z]/.test(password)) score += 10; // Uppercase
-            if (/[a-z]/.test(password)) score += 10; // Lowercase
-            if (/[0-9]/.test(password)) score += 10; // Numbers
-            if (/[^A-Za-z0-9]/.test(password)) score += 15; // Special chars
-            
-            // Pattern variety
-            if (/[A-Z].*[A-Z]/.test(password)) score += 5; // Multiple uppercase
-            if (/[a-z].*[a-z]/.test(password)) score += 5; // Multiple lowercase
-            if (/[0-9].*[0-9]/.test(password)) score += 5; // Multiple numbers
-            if (/[^A-Za-z0-9].*[^A-Za-z0-9]/.test(password)) score += 10; // Multiple special chars
-            
-            return Math.min(score, 100); // Cap at 100
-        }
+    // Create avatar preview with initial
+    function createAvatarPreview(userData, previewElement) {
+        const initial = (userData.name || userData.email)[0].toUpperCase();
+        const canvas = document.createElement('canvas');
+        canvas.width = 200;
+        canvas.height = 200;
+        const ctx = canvas.getContext('2d');
         
-        // Set up mobile menu toggle
-        window.showMenu = function() {
-            const navLinks = document.getElementById('navLinks');
-            if (navLinks) {
-                navLinks.style.right = '0';
-            }
-        };
-    
-        window.hideMenu = function() {
-            const navLinks = document.getElementById('navLinks');
-            if (navLinks) {
-                navLinks.style.right = '-200px';
-            }
-        };
-    
-        // Update the copyright year in the footer
-        const copyrightElement = document.querySelector('.copyright p');
-        if (copyrightElement) {
-            const currentYear = new Date().getFullYear();
-            copyrightElement.textContent = `© ${currentYear} NotesBuddy. All Rights Reserved.`;
-        }
-    })();
+        // Fill background
+        ctx.fillStyle = getColorForLetter(initial);
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+               // Draw initial
+               ctx.font = 'bold 100px Arial';
+               ctx.fillStyle = '#FFFFFF';
+               ctx.textAlign = 'center';
+               ctx.textBaseline = 'middle';
+               ctx.fillText(initial, canvas.width / 2, canvas.height / 2);
+               
+               // Set as preview
+               previewElement.src = canvas.toDataURL('image/png');
+           }
+           
+           // Initialize account settings
+           async function initializeAccountSettings(userData) {
+               // Initialize password form
+               initPasswordForm();
+               
+               // Initialize notification settings
+               initNotificationSettings(userData);
+               
+               // Initialize privacy settings
+               initPrivacySettings(userData);
+               
+               // Initialize danger zone (delete account)
+               initDeleteAccount();
+           }
+           
+           // Initialize password form
+           function initPasswordForm() {
+               const passwordForm = document.getElementById('passwordForm');
+               if (!passwordForm) return;
+               
+               // Initialize password toggles
+               const togglePasswordElements = document.querySelectorAll('.toggle-password');
+               togglePasswordElements.forEach(toggle => {
+                   toggle.addEventListener('click', function() {
+                       const input = this.parentElement.querySelector('input');
+                       if (input.type === 'password') {
+                           input.type = 'text';
+                           this.classList.replace('fa-eye-slash', 'fa-eye');
+                       } else {
+                           input.type = 'password';
+                           this.classList.replace('fa-eye', 'fa-eye-slash');
+                       }
+                   });
+               });
+               
+               // Initialize password strength meter
+               const newPassword = document.getElementById('newPassword');
+               const strengthLevel = document.getElementById('strengthLevel');
+               const strengthText = document.getElementById('strengthText');
+               
+               if (newPassword && strengthLevel && strengthText) {
+                   newPassword.addEventListener('input', () => {
+                       const score = calculatePasswordStrength(newPassword.value);
+                       
+                       // Update strength meter
+                       strengthLevel.style.width = `${score}%`;
+                       
+                       // Update color based on strength
+                       if (score < 25) {
+                           strengthLevel.style.backgroundColor = '#db4437'; // Red
+                           strengthText.textContent = 'Weak password';
+                       } else if (score < 50) {
+                           strengthLevel.style.backgroundColor = '#f4b400'; // Yellow
+                           strengthText.textContent = 'Fair password';
+                       } else if (score < 75) {
+                           strengthLevel.style.backgroundColor = '#0f9d58'; // Green
+                           strengthText.textContent = 'Good password';
+                       } else {
+                           strengthLevel.style.backgroundColor = '#4285f4'; // Blue
+                           strengthText.textContent = 'Strong password';
+                       }
+                   });
+               }
+               
+               // Handle form submission
+               passwordForm.addEventListener('submit', async (e) => {
+                   e.preventDefault();
+                   
+                   const currentPassword = document.getElementById('currentPassword').value;
+                   const newPassword = document.getElementById('newPassword').value;
+                   const confirmPassword = document.getElementById('confirmPassword').value;
+                   
+                   // Validate passwords
+                   if (!currentPassword || !newPassword || !confirmPassword) {
+                       alert('Please fill in all password fields');
+                       return;
+                   }
+                   
+                   if (newPassword !== confirmPassword) {
+                       alert('New passwords do not match');
+                       return;
+                   }
+                   
+                   // Show loading state
+                   const submitBtn = passwordForm.querySelector('button[type="submit"]');
+                   submitBtn.textContent = 'Updating...';
+                   submitBtn.disabled = true;
+                   
+                   try {
+                       // Change password via Supabase
+                       const { error } = await supabase.auth.updateUser({
+                           password: newPassword
+                       });
+                       
+                       if (error) throw error;
+                       
+                       // Show success message
+                       alert('Password updated successfully');
+                       
+                       // Reset form
+                       passwordForm.reset();
+                       
+                       // Reset strength meter
+                       if (strengthLevel) strengthLevel.style.width = '0';
+                       if (strengthText) strengthText.textContent = 'Password strength';
+                       
+                   } catch (error) {
+                       console.error('Error updating password:', error);
+                       alert('Error updating password. Please check your current password and try again.');
+                   } finally {
+                       // Reset button state
+                       submitBtn.textContent = 'Update Password';
+                       submitBtn.disabled = false;
+                   }
+               });
+           }
+           
+           // Initialize notification settings
+           function initNotificationSettings(userData) {
+               const saveNotificationBtn = document.getElementById('saveNotificationSettings');
+               if (!saveNotificationBtn) return;
+               
+               // Set initial checkbox states
+               if (userData.notifications) {
+                   const studyReminders = document.getElementById('notifyStudyReminders');
+                   const newFeatures = document.getElementById('notifyNewFeatures');
+                   const comments = document.getElementById('notifyComments');
+                   const updates = document.getElementById('notifyUpdates');
+                   
+                   if (studyReminders) studyReminders.checked = userData.notifications.studyReminders;
+                   if (newFeatures) newFeatures.checked = userData.notifications.newFeatures;
+                   if (comments) comments.checked = userData.notifications.comments;
+                   if (updates) updates.checked = userData.notifications.updates;
+               }
+               
+               // Handle save button
+               saveNotificationBtn.addEventListener('click', async () => {
+                   const studyReminders = document.getElementById('notifyStudyReminders').checked;
+                   const newFeatures = document.getElementById('notifyNewFeatures').checked;
+                   const comments = document.getElementById('notifyComments').checked;
+                   const updates = document.getElementById('notifyUpdates').checked;
+                   
+                   // Show loading state
+                   saveNotificationBtn.textContent = 'Saving...';
+                   saveNotificationBtn.disabled = true;
+                   
+                   try {
+                       // Update notifications in Supabase
+                       const { error } = await supabase
+                           .from('profiles')
+                           .update({
+                               notifications: {
+                                   studyReminders,
+                                   newFeatures,
+                                   comments,
+                                   updates
+                               }
+                           })
+                           .eq('id', userData.id);
+                       
+                       if (error) throw error;
+                       
+                       // Update local userData
+                       userData.notifications = {
+                           studyReminders,
+                           newFeatures,
+                           comments,
+                           updates
+                       };
+                       
+                       // Show success message
+                       alert('Notification settings saved');
+                       
+                   } catch (error) {
+                       console.error('Error updating notifications:', error);
+                       alert('Error saving notification settings. Please try again.');
+                   } finally {
+                       // Reset button state
+                       saveNotificationBtn.textContent = 'Save Notification Settings';
+                       saveNotificationBtn.disabled = false;
+                   }
+               });
+           }
+           
+           // Initialize privacy settings
+           function initPrivacySettings(userData) {
+               const savePrivacyBtn = document.getElementById('savePrivacySettings');
+               if (!savePrivacyBtn) return;
+               
+               // Set initial values
+               if (userData.privacy) {
+                   const profileVisibility = document.getElementById('profileVisibility');
+                   const notesVisibility = document.getElementById('notesVisibility');
+                   
+                   if (profileVisibility) profileVisibility.value = userData.privacy.profileVisibility || 'public';
+                   if (notesVisibility) notesVisibility.value = userData.privacy.notesVisibility || 'public';
+               }
+               
+               // Handle save button
+               savePrivacyBtn.addEventListener('click', async () => {
+                   const profileVisibility = document.getElementById('profileVisibility').value;
+                   const notesVisibility = document.getElementById('notesVisibility').value;
+                   
+                   // Show loading state
+                   savePrivacyBtn.textContent = 'Saving...';
+                   savePrivacyBtn.disabled = true;
+                   
+                   try {
+                       // Update privacy settings in Supabase
+                       const { error } = await supabase
+                           .from('profiles')
+                           .update({
+                               privacy: {
+                                   profileVisibility,
+                                   notesVisibility
+                               }
+                           })
+                           .eq('id', userData.id);
+                       
+                       if (error) throw error;
+                       
+                       // Update local userData
+                       userData.privacy = {
+                           profileVisibility,
+                           notesVisibility
+                       };
+                       
+                       // Show success message
+                       alert('Privacy settings saved');
+                       
+                   } catch (error) {
+                       console.error('Error updating privacy settings:', error);
+                       alert('Error saving privacy settings. Please try again.');
+                   } finally {
+                       // Reset button state
+                       savePrivacyBtn.textContent = 'Save Privacy Settings';
+                       savePrivacyBtn.disabled = false;
+                   }
+               });
+           }
+           
+           // Initialize delete account
+           function initDeleteAccount() {
+               const deleteAccountBtn = document.getElementById('deleteAccount');
+               if (!deleteAccountBtn) return;
+               
+               deleteAccountBtn.addEventListener('click', async () => {
+                   // Show confirmation dialog
+                   const confirmed = confirm('Are you sure you want to delete your account? This action cannot be undone.');
+                   
+                   if (!confirmed) return;
+                   
+                   try {
+                       // Delete user account via Supabase Auth
+                       const { error } = await supabase.auth.admin.deleteUser(
+                           (await supabase.auth.getUser()).data.user.id
+                       );
+                       
+                       if (error) throw error;
+                       
+                       alert('Your account has been deleted. You are now signed out.');
+                       window.location.href = 'index.html';
+                       
+                   } catch (error) {
+                       console.error('Error deleting account:', error);
+                       
+                       if (error.message.includes('Unauthorized') || error.message.includes('Permission denied')) {
+                           // If admin deletion fails, sign out user instead
+                           await supabase.auth.signOut();
+                           alert('You have been logged out. Please contact support to delete your account.');
+                           window.location.href = 'index.html';
+                       } else {
+                           alert('Error deleting account. Please try again or contact support.');
+                       }
+                   }
+               });
+           }
+           
+           // Set up logout button
+           function setupLogoutButton() {
+               if (!logoutBtn) return;
+               
+               logoutBtn.addEventListener('click', async (e) => {
+                   e.preventDefault();
+                   
+                   try {
+                       // Sign out via Supabase
+                       const { error } = await supabase.auth.signOut();
+                       
+                       if (error) throw error;
+                       
+                       // Redirect to home page
+                       window.location.href = 'index.html';
+                       
+                   } catch (error) {
+                       console.error('Error signing out:', error);
+                       alert('Error signing out. Please try again.');
+                   }
+               });
+           }
+       
+           // Calculate password strength score (0-100)
+           function calculatePasswordStrength(password) {
+               if (!password) return 0;
+               
+               let score = 0;
+               
+               // Length check
+               score += Math.min(password.length * 5, 30);
+               
+               // Character variety
+               if (/[A-Z]/.test(password)) score += 10; // Uppercase
+               if (/[a-z]/.test(password)) score += 10; // Lowercase
+               if (/[0-9]/.test(password)) score += 10; // Numbers
+               if (/[^A-Za-z0-9]/.test(password)) score += 15; // Special chars
+               
+               // Pattern variety
+               if (/[A-Z].*[A-Z]/.test(password)) score += 5; // Multiple uppercase
+               if (/[a-z].*[a-z]/.test(password)) score += 5; // Multiple lowercase
+               if (/[0-9].*[0-9]/.test(password)) score += 5; // Multiple numbers
+               if (/[^A-Za-z0-9].*[^A-Za-z0-9]/.test(password)) score += 10; // Multiple special chars
+               
+               return Math.min(score, 100); // Cap at 100
+           }
+           
+           // Mobile menu functions
+           window.showMenu = function() {
+               const navLinks = document.getElementById('navLinks');
+               if (navLinks) navLinks.style.right = '0';
+           };
+           
+           window.hideMenu = function() {
+               const navLinks = document.getElementById('navLinks');
+               if (navLinks) navLinks.style.right = '-200px';
+           };
+       })();
