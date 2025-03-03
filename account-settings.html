@@ -193,29 +193,29 @@
     </footer>
 
     <script>
-    // Initialize demo login state if not exists
-    window.isLoggedIn = true;
-    
-    // Initialize user data if not exists
-    if (!localStorage.getItem('userData')) {
-        const demoUser = {
-            email: 'shreyasroy123@example.com', // Using the login you provided
-            name: '',
-            createdAt: '2025-03-02T18:49:35Z', // Using the timestamp you provided
-            notifications: {
-                studyReminders: true,
-                newFeatures: true,
-                comments: false,
-                updates: true
-            },
-            privacy: {
-                profileVisibility: 'public',
-                notesVisibility: 'friends'
-            }
-        };
-        localStorage.setItem('userData', JSON.stringify(demoUser));
-    }
-    </script>
+        // Initialize demo login state if not exists
+        window.isLoggedIn = true;
+        
+        // Initialize user data if not exists
+        if (!localStorage.getItem('userData')) {
+            const demoUser = {
+                email: 'shreyasroy123@example.com', // Using the login you provided
+                name: '',
+                createdAt: '2025-03-02T19:06:24Z', // Using your exact updated timestamp
+                notifications: {
+                    studyReminders: true,
+                    newFeatures: true,
+                    comments: false,
+                    updates: true
+                },
+                privacy: {
+                    profileVisibility: 'public',
+                    notesVisibility: 'friends'
+                }
+            };
+            localStorage.setItem('userData', JSON.stringify(demoUser));
+        }
+        </script>
 
     <!-- Load additional scripts -->
     <script src="app.js"></script>

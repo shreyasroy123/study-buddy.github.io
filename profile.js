@@ -404,406 +404,406 @@ if (typeof window.supabase !== 'undefined') {
             avatarModal.style.display = 'none';
         });
         
-                // Close modal when clicking outside of it
-                window.addEventListener('click', (event) => {
-                    if (event.target === avatarModal) {
-                        avatarModal.style.display = 'none';
-                    }
-                });
-                
-                // Preview selected image
-                avatarInput.addEventListener('change', () => {
-                    const file = avatarInput.files[0];
-                    if (file) {
-                        const reader = new FileReader();
-                        reader.onload = (e) => {
-                            avatarPreview.src = e.target.result;
-                        };
-                        reader.readAsDataURL(file);
-                    }
-                });
-                
-                // Handle avatar form submission
-                avatarForm.addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    
-                    const file = avatarInput.files[0];
-                    if (!file) {
-                        alert('Please select an image');
-                        return;
-                    }
-                    
-                    // Show loading state
-                    const submitBtn = avatarForm.querySelector('button[type="submit"]');
-                    submitBtn.textContent = 'Uploading...';
-                    submitBtn.disabled = true;
-                    
-                    // Convert the selected file to a data URL
+               // Close modal when clicking outside of it
+               window.addEventListener('click', (event) => {
+                if (event.target === avatarModal) {
+                    avatarModal.style.display = 'none';
+                }
+            });
+            
+            // Preview selected image
+            avatarInput.addEventListener('change', () => {
+                const file = avatarInput.files[0];
+                if (file) {
                     const reader = new FileReader();
                     reader.onload = (e) => {
-                        const newAvatarUrl = e.target.result;
-                        
-                        // Get user data
-                        const userData = getUserFromLocalStorage();
-                        
-                        // Update avatar URL in user data
-                        userData.avatarUrl = newAvatarUrl;
-                        
-                        // Save to localStorage
-                        localStorage.setItem('userData', JSON.stringify(userData));
-                        
-                        // Update UI with the new avatar
-                        if (largeProfilePic.tagName !== 'IMG') {
-                            // Convert div to img
-                            const parentElement = largeProfilePic.parentElement;
-                            const newImg = document.createElement('img');
-                            newImg.id = 'largeProfilePic';
-                            newImg.src = newAvatarUrl;
-                            newImg.alt = 'Profile Picture';
-                            newImg.style.width = '100%';
-                            newImg.style.height = '100%';
-                            newImg.style.objectFit = 'cover';
-                            
-                            if (parentElement) {
-                                parentElement.replaceChild(newImg, largeProfilePic);
-                                largeProfilePic = newImg;
-                            }
-                        } else {
-                            largeProfilePic.src = newAvatarUrl;
-                        }
-                        
-                        // Update navbar profile pic
-                        if (profilePic.tagName !== 'IMG') {
-                            // Convert div to img
-                            const parentElement = profilePic.parentElement;
-                            const newImg = document.createElement('img');
-                            newImg.id = 'profilePic';
-                            newImg.src = newAvatarUrl;
-                            newImg.alt = 'User';
-                            newImg.style.width = '35px';
-                            newImg.style.height = '35px';
-                            newImg.style.borderRadius = '50%';
-                            newImg.style.marginRight = '10px';
-                            newImg.style.objectFit = 'cover';
-                            
-                            if (parentElement) {
-                                parentElement.replaceChild(newImg, profilePic);
-                                profilePic = newImg;
-                            }
-                        } else {
-                            profilePic.src = newAvatarUrl;
-                        }
-                        
-                        // Close modal
-                        avatarModal.style.display = 'none';
-                        
-                        // Reset form
-                        avatarForm.reset();
-                        submitBtn.textContent = 'Upload';
-                        submitBtn.disabled = false;
-                        
-                        // Show success message
-                        alert('Profile picture updated successfully!');
+                        avatarPreview.src = e.target.result;
                     };
                     reader.readAsDataURL(file);
-                });
-            }
-        
-            // Initialize account settings
-            function initializeAccountSettings() {
-                // Initialize password form
-                initPasswordForm();
+                }
+            });
+            
+            // Handle avatar form submission
+            avatarForm.addEventListener('submit', (e) => {
+                e.preventDefault();
                 
-                // Initialize notification settings
-                initNotificationSettings();
+                const file = avatarInput.files[0];
+                if (!file) {
+                    alert('Please select an image');
+                    return;
+                }
                 
-                // Initialize privacy settings
-                initPrivacySettings();
+                // Show loading state
+                const submitBtn = avatarForm.querySelector('button[type="submit"]');
+                submitBtn.textContent = 'Uploading...';
+                submitBtn.disabled = true;
                 
-                // Initialize danger zone (delete account)
-                initDeleteAccount();
-            }
-        
+                // Convert the selected file to a data URL
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const newAvatarUrl = e.target.result;
+                    
+                    // Get user data
+                    const userData = getUserFromLocalStorage();
+                    
+                    // Update avatar URL in user data
+                    userData.avatarUrl = newAvatarUrl;
+                    
+                    // Save to localStorage
+                    localStorage.setItem('userData', JSON.stringify(userData));
+                    
+                    // Update UI with the new avatar
+                    if (largeProfilePic.tagName !== 'IMG') {
+                        // Convert div to img
+                        const parentElement = largeProfilePic.parentElement;
+                        const newImg = document.createElement('img');
+                        newImg.id = 'largeProfilePic';
+                        newImg.src = newAvatarUrl;
+                        newImg.alt = 'Profile Picture';
+                        newImg.style.width = '100%';
+                        newImg.style.height = '100%';
+                        newImg.style.objectFit = 'cover';
+                        
+                        if (parentElement) {
+                            parentElement.replaceChild(newImg, largeProfilePic);
+                            largeProfilePic = newImg;
+                        }
+                    } else {
+                        largeProfilePic.src = newAvatarUrl;
+                    }
+                    
+                    // Update navbar profile pic
+                    if (profilePic.tagName !== 'IMG') {
+                        // Convert div to img
+                        const parentElement = profilePic.parentElement;
+                        const newImg = document.createElement('img');
+                        newImg.id = 'profilePic';
+                        newImg.src = newAvatarUrl;
+                        newImg.alt = 'User';
+                        newImg.style.width = '35px';
+                        newImg.style.height = '35px';
+                        newImg.style.borderRadius = '50%';
+                        newImg.style.marginRight = '10px';
+                        newImg.style.objectFit = 'cover';
+                        
+                        if (parentElement) {
+                            parentElement.replaceChild(newImg, profilePic);
+                            profilePic = newImg;
+                        }
+                    } else {
+                        profilePic.src = newAvatarUrl;
+                    }
+                    
+                    // Close modal
+                    avatarModal.style.display = 'none';
+                    
+                    // Reset form
+                    avatarForm.reset();
+                    submitBtn.textContent = 'Upload';
+                    submitBtn.disabled = false;
+                    
+                    // Show success message
+                    alert('Profile picture updated successfully!');
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+    
+        // Initialize account settings
+        function initializeAccountSettings() {
             // Initialize password form
-            function initPasswordForm() {
-                const passwordForm = document.getElementById('passwordForm');
-                if (!passwordForm) return;
-                
-                // Initialize password toggles
-                const togglePasswordElements = document.querySelectorAll('.toggle-password');
-                togglePasswordElements.forEach(toggle => {
-                    toggle.addEventListener('click', function() {
-                        const input = this.parentElement.querySelector('input');
-                        if (input.type === 'password') {
-                            input.type = 'text';
-                            this.classList.replace('fa-eye-slash', 'fa-eye');
-                        } else {
-                            input.type = 'password';
-                            this.classList.replace('fa-eye', 'fa-eye-slash');
-                        }
-                    });
-                });
-                
-                // Initialize password strength meter
-                const newPassword = document.getElementById('newPassword');
-                const strengthLevel = document.getElementById('strengthLevel');
-                const strengthText = document.getElementById('strengthText');
-                
-                if (newPassword && strengthLevel && strengthText) {
-                    newPassword.addEventListener('input', () => {
-                        const score = calculatePasswordStrength(newPassword.value);
-                        
-                        // Update strength meter
-                        strengthLevel.style.width = `${score}%`;
-                        
-                        // Update color based on strength
-                        if (score < 25) {
-                            strengthLevel.style.backgroundColor = '#db4437'; // Red
-                            strengthText.textContent = 'Weak password';
-                        } else if (score < 50) {
-                            strengthLevel.style.backgroundColor = '#f4b400'; // Yellow
-                            strengthText.textContent = 'Fair password';
-                        } else if (score < 75) {
-                            strengthLevel.style.backgroundColor = '#0f9d58'; // Green
-                            strengthText.textContent = 'Good password';
-                        } else {
-                            strengthLevel.style.backgroundColor = '#4285f4'; // Blue
-                            strengthText.textContent = 'Strong password';
-                        }
-                    });
-                }
-                
-                // Handle form submission
-                passwordForm.addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    
-                    const currentPassword = document.getElementById('currentPassword').value;
-                    const newPassword = document.getElementById('newPassword').value;
-                    const confirmPassword = document.getElementById('confirmPassword').value;
-                    
-                    // Validate passwords
-                    if (!currentPassword || !newPassword || !confirmPassword) {
-                        alert('Please fill in all password fields');
-                        return;
-                    }
-                    
-                    if (newPassword !== confirmPassword) {
-                        alert('New passwords do not match');
-                        return;
-                    }
-                    
-                    // Show loading state
-                    const submitBtn = passwordForm.querySelector('button[type="submit"]');
-                    submitBtn.textContent = 'Updating...';
-                    submitBtn.disabled = true;
-                    
-                    // Simulate password update (in real app, this would be an API call)
-                    setTimeout(() => {
-                        // Show success message
-                        alert('Password updated successfully');
-                        
-                        // Reset form
-                        passwordForm.reset();
-                        
-                        // Reset strength meter
-                        if (strengthLevel && strengthText) {
-                            strengthLevel.style.width = '0';
-                            strengthText.textContent = 'Password strength';
-                        }
-                        
-                        // Reset button state
-                        submitBtn.textContent = 'Update Password';
-                        submitBtn.disabled = false;
-                    }, 1000);
-                });
-            }
-        
+            initPasswordForm();
+            
             // Initialize notification settings
-            function initNotificationSettings() {
-                const saveNotificationBtn = document.getElementById('saveNotificationSettings');
-                if (!saveNotificationBtn) return;
-                
-                // Get user data
-                const userData = getUserFromLocalStorage();
-                
-                // Set initial checkbox states based on user data
-                if (userData.notifications) {
-                    document.getElementById('notifyStudyReminders').checked = userData.notifications.studyReminders;
-                    document.getElementById('notifyNewFeatures').checked = userData.notifications.newFeatures;
-                    document.getElementById('notifyComments').checked = userData.notifications.comments;
-                    document.getElementById('notifyUpdates').checked = userData.notifications.updates;
-                }
-                
-                // Handle save button click
-                saveNotificationBtn.addEventListener('click', () => {
-                    // Get checkbox states
-                    const studyReminders = document.getElementById('notifyStudyReminders').checked;
-                    const newFeatures = document.getElementById('notifyNewFeatures').checked;
-                    const comments = document.getElementById('notifyComments').checked;
-                    const updates = document.getElementById('notifyUpdates').checked;
-                    
-                    // Update notification settings
-                    userData.notifications = {
-                        studyReminders,
-                        newFeatures,
-                        comments,
-                        updates
-                    };
-                    
-                    // Save to localStorage
-                    localStorage.setItem('userData', JSON.stringify(userData));
-                    
-                    // Show loading state
-                    saveNotificationBtn.textContent = 'Saving...';
-                    saveNotificationBtn.disabled = true;
-                    
-                    // Simulate API delay
-                    setTimeout(() => {
-                        // Show success message
-                        alert('Notification settings saved');
-                        
-                        // Reset button state
-                        saveNotificationBtn.textContent = 'Save Notification Settings';
-                        saveNotificationBtn.disabled = false;
-                    }, 1000);
-                });
-            }
-        
+            initNotificationSettings();
+            
             // Initialize privacy settings
-            function initPrivacySettings() {
-                const savePrivacyBtn = document.getElementById('savePrivacySettings');
-                if (!savePrivacyBtn) return;
-                
-                // Get user data
-                const userData = getUserFromLocalStorage();
-                
-                // Set initial select values based on user data
-                if (userData.privacy) {
-                    document.getElementById('profileVisibility').value = userData.privacy.profileVisibility || 'public';
-                    document.getElementById('notesVisibility').value = userData.privacy.notesVisibility || 'public';
-                }
-                
-                // Handle save button click
-                savePrivacyBtn.addEventListener('click', () => {
-                    // Get select values
-                    const profileVisibility = document.getElementById('profileVisibility').value;
-                    const notesVisibility = document.getElementById('notesVisibility').value;
-                    
-                    // Update privacy settings
-                    userData.privacy = {
-                        profileVisibility,
-                        notesVisibility
-                    };
-                    
-                    // Save to localStorage
-                    localStorage.setItem('userData', JSON.stringify(userData));
-                    
-                    // Show loading state
-                    savePrivacyBtn.textContent = 'Saving...';
-                    savePrivacyBtn.disabled = true;
-                    
-                    // Simulate API delay
-                    setTimeout(() => {
-                        // Show success message
-                        alert('Privacy settings saved');
-                        
-                        // Reset button state
-                        savePrivacyBtn.textContent = 'Save Privacy Settings';
-                        savePrivacyBtn.disabled = false;
-                    }, 1000);
+            initPrivacySettings();
+            
+            // Initialize danger zone (delete account)
+            initDeleteAccount();
+        }
+    
+        // Initialize password form
+        function initPasswordForm() {
+            const passwordForm = document.getElementById('passwordForm');
+            if (!passwordForm) return;
+            
+            // Initialize password toggles
+            const togglePasswordElements = document.querySelectorAll('.toggle-password');
+            togglePasswordElements.forEach(toggle => {
+                toggle.addEventListener('click', function() {
+                    const input = this.parentElement.querySelector('input');
+                    if (input.type === 'password') {
+                        input.type = 'text';
+                        this.classList.replace('fa-eye-slash', 'fa-eye');
+                    } else {
+                        input.type = 'password';
+                        this.classList.replace('fa-eye', 'fa-eye-slash');
+                    }
                 });
-            }
-        
-            // Initialize delete account functionality
-            function initDeleteAccount() {
-                const deleteAccountBtn = document.getElementById('deleteAccount');
-                if (!deleteAccountBtn) return;
-                
-                deleteAccountBtn.addEventListener('click', () => {
-                    // Show confirmation dialog
-                    const confirmed = confirm('Are you sure you want to delete your account? This action cannot be undone.');
+            });
+            
+            // Initialize password strength meter
+            const newPassword = document.getElementById('newPassword');
+            const strengthLevel = document.getElementById('strengthLevel');
+            const strengthText = document.getElementById('strengthText');
+            
+            if (newPassword && strengthLevel && strengthText) {
+                newPassword.addEventListener('input', () => {
+                    const score = calculatePasswordStrength(newPassword.value);
                     
-                    if (confirmed) {
-                        // Get user data
-                        const userData = getUserFromLocalStorage();
-                        
-                        // Ask for email confirmation
-                        const emailConfirmation = prompt(`To confirm deletion, please type your email address (${userData.email}):`);
-                        
-                        if (emailConfirmation === userData.email) {
-                            // Clear user data from localStorage
-                            localStorage.removeItem('userData');
-                            
-                            // Show success message
-                            alert('Your account has been deleted. You are now signed out.');
-                            
-                            // Redirect to home page
-                            window.location.href = 'index.html';
-                        } else {
-                            alert('Email address does not match. Account deletion cancelled.');
-                        }
+                    // Update strength meter
+                    strengthLevel.style.width = `${score}%`;
+                    
+                    // Update color based on strength
+                    if (score < 25) {
+                        strengthLevel.style.backgroundColor = '#db4437'; // Red
+                        strengthText.textContent = 'Weak password';
+                    } else if (score < 50) {
+                        strengthLevel.style.backgroundColor = '#f4b400'; // Yellow
+                        strengthText.textContent = 'Fair password';
+                    } else if (score < 75) {
+                        strengthLevel.style.backgroundColor = '#0f9d58'; // Green
+                        strengthText.textContent = 'Good password';
+                    } else {
+                        strengthLevel.style.backgroundColor = '#4285f4'; // Blue
+                        strengthText.textContent = 'Strong password';
                     }
                 });
             }
             
-            // Set up logout button
-            function setupLogoutButton() {
-                if (logoutBtn) {
-                    logoutBtn.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        
-                        // Clear user data (in a real app, this would also involve API calls)
+            // Handle form submission
+            passwordForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const currentPassword = document.getElementById('currentPassword').value;
+                const newPassword = document.getElementById('newPassword').value;
+                const confirmPassword = document.getElementById('confirmPassword').value;
+                
+                // Validate passwords
+                if (!currentPassword || !newPassword || !confirmPassword) {
+                    alert('Please fill in all password fields');
+                    return;
+                }
+                
+                if (newPassword !== confirmPassword) {
+                    alert('New passwords do not match');
+                    return;
+                }
+                
+                // Show loading state
+                const submitBtn = passwordForm.querySelector('button[type="submit"]');
+                submitBtn.textContent = 'Updating...';
+                submitBtn.disabled = true;
+                
+                // Simulate password update (in real app, this would be an API call)
+                setTimeout(() => {
+                    // Show success message
+                    alert('Password updated successfully');
+                    
+                    // Reset form
+                    passwordForm.reset();
+                    
+                    // Reset strength meter
+                    if (strengthLevel && strengthText) {
+                        strengthLevel.style.width = '0';
+                        strengthText.textContent = 'Password strength';
+                    }
+                    
+                    // Reset button state
+                    submitBtn.textContent = 'Update Password';
+                    submitBtn.disabled = false;
+                }, 1000);
+            });
+        }
+    
+        // Initialize notification settings
+        function initNotificationSettings() {
+            const saveNotificationBtn = document.getElementById('saveNotificationSettings');
+            if (!saveNotificationBtn) return;
+            
+            // Get user data
+            const userData = getUserFromLocalStorage();
+            
+            // Set initial checkbox states based on user data
+            if (userData.notifications) {
+                document.getElementById('notifyStudyReminders').checked = userData.notifications.studyReminders;
+                document.getElementById('notifyNewFeatures').checked = userData.notifications.newFeatures;
+                document.getElementById('notifyComments').checked = userData.notifications.comments;
+                document.getElementById('notifyUpdates').checked = userData.notifications.updates;
+            }
+            
+            // Handle save button click
+            saveNotificationBtn.addEventListener('click', () => {
+                // Get checkbox states
+                const studyReminders = document.getElementById('notifyStudyReminders').checked;
+                const newFeatures = document.getElementById('notifyNewFeatures').checked;
+                const comments = document.getElementById('notifyComments').checked;
+                const updates = document.getElementById('notifyUpdates').checked;
+                
+                // Update notification settings
+                userData.notifications = {
+                    studyReminders,
+                    newFeatures,
+                    comments,
+                    updates
+                };
+                
+                // Save to localStorage
+                localStorage.setItem('userData', JSON.stringify(userData));
+                
+                // Show loading state
+                saveNotificationBtn.textContent = 'Saving...';
+                saveNotificationBtn.disabled = true;
+                
+                // Simulate API delay
+                setTimeout(() => {
+                    // Show success message
+                    alert('Notification settings saved');
+                    
+                    // Reset button state
+                    saveNotificationBtn.textContent = 'Save Notification Settings';
+                    saveNotificationBtn.disabled = false;
+                }, 1000);
+            });
+        }
+    
+        // Initialize privacy settings
+        function initPrivacySettings() {
+            const savePrivacyBtn = document.getElementById('savePrivacySettings');
+            if (!savePrivacyBtn) return;
+            
+            // Get user data
+            const userData = getUserFromLocalStorage();
+            
+            // Set initial select values based on user data
+            if (userData.privacy) {
+                document.getElementById('profileVisibility').value = userData.privacy.profileVisibility || 'public';
+                document.getElementById('notesVisibility').value = userData.privacy.notesVisibility || 'public';
+            }
+            
+            // Handle save button click
+            savePrivacyBtn.addEventListener('click', () => {
+                // Get select values
+                const profileVisibility = document.getElementById('profileVisibility').value;
+                const notesVisibility = document.getElementById('notesVisibility').value;
+                
+                // Update privacy settings
+                userData.privacy = {
+                    profileVisibility,
+                    notesVisibility
+                };
+                
+                // Save to localStorage
+                localStorage.setItem('userData', JSON.stringify(userData));
+                
+                // Show loading state
+                savePrivacyBtn.textContent = 'Saving...';
+                savePrivacyBtn.disabled = true;
+                
+                // Simulate API delay
+                setTimeout(() => {
+                    // Show success message
+                    alert('Privacy settings saved');
+                    
+                    // Reset button state
+                    savePrivacyBtn.textContent = 'Save Privacy Settings';
+                    savePrivacyBtn.disabled = false;
+                }, 1000);
+            });
+        }
+    
+        // Initialize delete account functionality
+        function initDeleteAccount() {
+            const deleteAccountBtn = document.getElementById('deleteAccount');
+            if (!deleteAccountBtn) return;
+            
+            deleteAccountBtn.addEventListener('click', () => {
+                // Show confirmation dialog
+                const confirmed = confirm('Are you sure you want to delete your account? This action cannot be undone.');
+                
+                if (confirmed) {
+                    // Get user data
+                    const userData = getUserFromLocalStorage();
+                    
+                    // Ask for email confirmation
+                    const emailConfirmation = prompt(`To confirm deletion, please type your email address (${userData.email}):`);
+                    
+                    if (emailConfirmation === userData.email) {
+                        // Clear user data from localStorage
                         localStorage.removeItem('userData');
+                        
+                        // Show success message
+                        alert('Your account has been deleted. You are now signed out.');
                         
                         // Redirect to home page
                         window.location.href = 'index.html';
-                    });
+                    } else {
+                        alert('Email address does not match. Account deletion cancelled.');
+                    }
                 }
-            }
+            });
+        }
         
-            // Calculate password strength score (0-100)
-            function calculatePasswordStrength(password) {
-                if (!password) return 0;
-                
-                let score = 0;
-                
-                // Length check
-                score += Math.min(password.length * 5, 30);
-                
-                // Character variety
-                if (/[A-Z]/.test(password)) score += 10; // Uppercase
-                if (/[a-z]/.test(password)) score += 10; // Lowercase
-                if (/[0-9]/.test(password)) score += 10; // Numbers
-                if (/[^A-Za-z0-9]/.test(password)) score += 15; // Special chars
-                
-                // Pattern variety
-                if (/[A-Z].*[A-Z]/.test(password)) score += 5; // Multiple uppercase
-                if (/[a-z].*[a-z]/.test(password)) score += 5; // Multiple lowercase
-                if (/[0-9].*[0-9]/.test(password)) score += 5; // Multiple numbers
-                if (/[^A-Za-z0-9].*[^A-Za-z0-9]/.test(password)) score += 10; // Multiple special chars
-                
-                return Math.min(score, 100); // Cap at 100
+        // Set up logout button
+        function setupLogoutButton() {
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    
+                    // Clear user data (in a real app, this would also involve API calls)
+                    localStorage.removeItem('userData');
+                    
+                    // Redirect to home page
+                    window.location.href = 'index.html';
+                });
             }
+        }
+    
+        // Calculate password strength score (0-100)
+        function calculatePasswordStrength(password) {
+            if (!password) return 0;
             
-            // Set up mobile menu toggle
-            window.showMenu = function() {
-                const navLinks = document.getElementById('navLinks');
-                if (navLinks) {
-                    navLinks.style.right = '0';
-                }
-            };
+            let score = 0;
+            
+            // Length check
+            score += Math.min(password.length * 5, 30);
+            
+            // Character variety
+            if (/[A-Z]/.test(password)) score += 10; // Uppercase
+            if (/[a-z]/.test(password)) score += 10; // Lowercase
+            if (/[0-9]/.test(password)) score += 10; // Numbers
+            if (/[^A-Za-z0-9]/.test(password)) score += 15; // Special chars
+            
+            // Pattern variety
+            if (/[A-Z].*[A-Z]/.test(password)) score += 5; // Multiple uppercase
+            if (/[a-z].*[a-z]/.test(password)) score += 5; // Multiple lowercase
+            if (/[0-9].*[0-9]/.test(password)) score += 5; // Multiple numbers
+            if (/[^A-Za-z0-9].*[^A-Za-z0-9]/.test(password)) score += 10; // Multiple special chars
+            
+            return Math.min(score, 100); // Cap at 100
+        }
         
-            window.hideMenu = function() {
-                const navLinks = document.getElementById('navLinks');
-                if (navLinks) {
-                    navLinks.style.right = '-200px';
-                }
-            };
-        
-            // Update the copyright year in the footer
-            const copyrightElement = document.querySelector('.copyright p');
-            if (copyrightElement) {
-                const currentYear = new Date().getFullYear();
-                copyrightElement.textContent = `© ${currentYear} NotesBuddy. All Rights Reserved.`;
+        // Set up mobile menu toggle
+        window.showMenu = function() {
+            const navLinks = document.getElementById('navLinks');
+            if (navLinks) {
+                navLinks.style.right = '0';
             }
-        })();
+        };
+    
+        window.hideMenu = function() {
+            const navLinks = document.getElementById('navLinks');
+            if (navLinks) {
+                navLinks.style.right = '-200px';
+            }
+        };
+    
+        // Update the copyright year in the footer
+        const copyrightElement = document.querySelector('.copyright p');
+        if (copyrightElement) {
+            const currentYear = new Date().getFullYear();
+            copyrightElement.textContent = `© ${currentYear} NotesBuddy. All Rights Reserved.`;
+        }
+    })();
