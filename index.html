@@ -148,5 +148,40 @@
     </footer>
 
     <script src="app.js"></script>
+<!-- Add this right before the closing body tag -->
+<script src="app.js"></script>
+<script>
+// Simple fix to restore navbar user profile
+document.addEventListener('DOMContentLoaded', function() {
+    // Get elements
+    const userProfile = document.getElementById('userProfile');
+    const authButtons = document.getElementById('authButtons');
+    const userName = document.getElementById('userName');
+    const profilePic = document.getElementById('profilePic');
+    
+    // Force user profile to show
+    if (userProfile) userProfile.style.display = 'flex';
+    if (authButtons) authButtons.style.display = 'none';
+    
+    // Set user name to shreyasroy123
+    if (userName) userName.textContent = 'shreyasroy123';
+    
+    // Set profile pic
+    if (profilePic) {
+        profilePic.textContent = 'S';
+        profilePic.style.backgroundColor = '#4285F4';
+    }
+    
+    // Set up logout button
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            // Just redirect to home/login page
+            window.location.href = 'index.html';
+        });
+    }
+});
+</script>
 </body>
 </html>
