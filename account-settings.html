@@ -7,11 +7,9 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="profile-styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <!-- Supabase JS library -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-    <!-- Navbar -->
+    <!-- Navbar - Matching the index.html navbar structure -->
     <nav class="navbar">
         <div class="navbar-container">
             <div class="logo">
@@ -34,7 +32,7 @@
             
             <!-- User is logged in -->
             <div class="user-profile" id="userProfile" style="display:none;">
-                <div id="profilePic" style="width:35px;height:35px;border-radius:50%;background:#4285F4;color:white;display:flex;align-items:center;justify-content:center;margin-right:10px;font-weight:bold;">U</div>
+                <img src="images/default-avatar.png" alt="User" id="profilePic">
                 <span id="userName">User</span>
                 <div class="profile-dropdown">
                     <a href="profile.html">My Profile</a>
@@ -194,7 +192,33 @@
         </div>
     </footer>
 
+    <script>
+    // Initialize demo login state if not exists
+    window.isLoggedIn = true;
+    
+    // Initialize user data if not exists
+    if (!localStorage.getItem('userData')) {
+        const demoUser = {
+            email: 'shreyasroy123@example.com', // Using the login you provided
+            name: '',
+            createdAt: '2025-03-02T18:49:35Z', // Using the timestamp you provided
+            notifications: {
+                studyReminders: true,
+                newFeatures: true,
+                comments: false,
+                updates: true
+            },
+            privacy: {
+                profileVisibility: 'public',
+                notesVisibility: 'friends'
+            }
+        };
+        localStorage.setItem('userData', JSON.stringify(demoUser));
+    }
+    </script>
+
     <!-- Load additional scripts -->
+    <script src="app.js"></script>
     <script src="profile.js"></script>
 </body>
 </html>
