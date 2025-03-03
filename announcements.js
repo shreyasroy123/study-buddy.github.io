@@ -337,13 +337,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Set user name
         const userNameElement = document.getElementById('user-name');
         if (userNameElement) {
-            userNameElement.textContent = 'shreyasroy123';
+            userNameElement.textContent = 'Shreyas Roy';
         }
         
         // Placeholder avatar until real one is loaded
         const userAvatarElement = document.getElementById('user-avatar');
         if (userAvatarElement) {
-            userAvatarElement.src = 'https://via.placeholder.com/40?text=SR';
+            userAvatarElement.src = 'https://cdn4.vectorstock.com/i/1000x1000/52/68/account-icon-vector-48295268.jpg';
         }
     }
     
