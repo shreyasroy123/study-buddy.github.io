@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // Validate Supabase key format
-        if (SUPABASE_ANON_KEY === 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhybHlzcHp2ZXdneG10cGN3anZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA5OTYxNjcsImV4cCI6MjA1NjU3MjE2N30.TKDwRohOzECZ_gmucp6nAauJcDp0YXtiR4oC9weuLt4' || SUPABASE_ANON_KEY.length < 20) {
+        if (SUPABASE_ANON_KEY != 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhybHlzcHp2ZXdneG10cGN3anZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA5OTYxNjcsImV4cCI6MjA1NjU3MjE2N30.TKDwRohOzECZ_gmucp6nAauJcDp0YXtiR4oC9weuLt4' || SUPABASE_ANON_KEY.length < 20) {
             console.error("Invalid Supabase anon key. Please set your actual Supabase anon key.");
             document.getElementById('auth-section').style.display = 'flex';
             document.getElementById('user-section').style.display = 'none';
