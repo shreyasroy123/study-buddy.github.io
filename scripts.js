@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         
         // Validate Supabase key format
-        if (SUPABASE_ANON_KEY != 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhybHlzcHp2ZXdneG10cGN3anZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA5OTYxNjcsImV4cCI6MjA1NjU3MjE2N30.TKDwRohOzECZ_gmucp6nAauJcDp0YXtiR4oC9weuLt4' || SUPABASE_ANON_KEY.length < 20) {
+        if (SUPABASE_ANON_KEY != 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhybHlzcHp2ZXdneG10cGN3anZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA5OTYxNjcsImV4cCI6MjA1NjU3MjE2N30.TKDwRohOzECZ_gmucp6nAauJcDp0YXtiR4oC9weuLt4') {
             console.error("Invalid Supabase anon key. Please set your actual Supabase anon key.");
             document.getElementById('auth-section').style.display = 'flex';
             document.getElementById('user-section').style.display = 'none';
@@ -72,6 +72,73 @@ document.addEventListener('DOMContentLoaded', () => {
                 profilePicInput.addEventListener('change', function() {
                     previewProfileImage(this);
                 });
+            }
+            
+            // Setup real-time password validation
+            const passwordInput = document.getElementById('password');
+            if (passwordInput) {
+                // Create password validation container if it doesn't exist
+                let passwordValidationContainer = document.getElementById('password-validation-container');
+                if (!passwordValidationContainer) {
+                    passwordValidationContainer = document.createElement('div');
+                    passwordValidationContainer.id = 'password-validation-container';
+                    passwordValidationContainer.className = 'password-validation-container';
+                    passwordValidationContainer.innerHTML = `
+                        <div class="validation-item" id="length-validation">
+                            <i class="fas fa-times-circle"></i> At least 8 characters
+                        </div>
+                        <div class="validation-item" id="uppercase-validation">
+                            <i class="fas fa-times-circle"></i> At least one uppercase letter
+                        </div>
+                        <div class="validation-item" id="lowercase-validation">
+                            <i class="fas fa-times-circle"></i> At least one lowercase letter
+                        </div>
+                        <div class="validation-item" id="number-validation">
+                            <i class="fas fa-times-circle"></i> At least one number
+                        </div>
+                        <div class="validation-item" id="special-validation">
+                            <i class="fas fa-times-circle"></i> At least one special character (@$!%*?&)
+                        </div>
+                    `;
+                    passwordInput.parentNode.insertBefore(passwordValidationContainer, passwordInput.nextSibling);
+                    
+                    // Add some basic styles for the validation container
+                    const style = document.createElement('style');
+                    style.textContent = `
+                        .password-validation-container {
+                            font-size: 0.85rem;
+                            color: #666;
+                            margin-top: 5px;
+                            margin-bottom: 10px;
+                            padding: 10px;
+                            border-radius: 4px;
+                            background-color: #f8f9fa;
+                        }
+                        .validation-item {
+                            margin-bottom: 5px;
+                        }
+                        .validation-item i {
+                            margin-right: 5px;
+                        }
+                        .validation-success {
+                            color: #28a745;
+                        }
+                        .validation-failure {
+                            color: #dc3545;
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+                
+                // Add real-time validation event
+                passwordInput.addEventListener('input', function() {
+                    validatePasswordRealTime(this.value);
+                });
+                
+                // Initial validation state setup (if password field has a value on page load)
+                if (passwordInput.value) {
+                    validatePasswordRealTime(passwordInput.value);
+                }
             }
         }
         
@@ -178,8 +245,9 @@ async function signup(email, password, fullName, phoneNumber, profilePicFile) {
     
     try {
         // Validate password
-        if (!validatePassword(password)) {
-            alert('Password must contain at least 8 characters, including uppercase and lowercase letters, numbers, and special characters.');
+        const validationResult = checkPasswordValidation(password);
+        if (!validationResult.valid) {
+            alert('Please fix the following password requirements:\n' + validationResult.errors.join('\n'));
             return;
         }
         
@@ -243,11 +311,84 @@ async function logout() {
     }
 }
 
-// Password validation
+// Password validation - checks all criteria at once
 function validatePassword(password) {
     // At least 8 characters, including uppercase and lowercase letters, numbers, and special characters
     const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     return regex.test(password);
+}
+
+// Enhanced password validation that returns specific errors
+function checkPasswordValidation(password) {
+    const result = {
+        valid: true,
+        errors: []
+    };
+    
+    // Check length
+    if (password.length < 8) {
+        result.valid = false;
+        result.errors.push('Password must be at least 8 characters long');
+    }
+    
+    // Check for uppercase letters
+    if (!/[A-Z]/.test(password)) {
+        result.valid = false;
+        result.errors.push('Password must contain at least one uppercase letter');
+    }
+    
+    // Check for lowercase letters
+    if (!/[a-z]/.test(password)) {
+        result.valid = false;
+        result.errors.push('Password must contain at least one lowercase letter');
+    }
+    
+    // Check for numbers
+    if (!/\d/.test(password)) {
+        result.valid = false;
+        result.errors.push('Password must contain at least one number');
+    }
+    
+    // Check for special characters
+    if (!/[@$!%*?&]/.test(password)) {
+        result.valid = false;
+        result.errors.push('Password must contain at least one special character (@$!%*?&)');
+    }
+    
+    return result;
+}
+
+// Real-time password validation feedback
+function validatePasswordRealTime(password) {
+    // Check each validation criteria separately
+    const lengthValid = password.length >= 8;
+    const uppercaseValid = /[A-Z]/.test(password);
+    const lowercaseValid = /[a-z]/.test(password);
+    const numberValid = /\d/.test(password);
+    const specialValid = /[@$!%*?&]/.test(password);
+    
+    // Update UI for each validation criteria
+    updateValidationUI('length-validation', lengthValid, 'At least 8 characters');
+    updateValidationUI('uppercase-validation', uppercaseValid, 'At least one uppercase letter');
+    updateValidationUI('lowercase-validation', lowercaseValid, 'At least one lowercase letter');
+    updateValidationUI('number-validation', numberValid, 'At least one number');
+    updateValidationUI('special-validation', specialValid, 'At least one special character (@$!%*?&)');
+}
+
+// Update validation UI element
+function updateValidationUI(elementId, isValid, text) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        if (isValid) {
+            element.innerHTML = `<i class="fas fa-check-circle"></i> ${text}`;
+            element.classList.add('validation-success');
+            element.classList.remove('validation-failure');
+        } else {
+            element.innerHTML = `<i class="fas fa-times-circle"></i> ${text}`;
+            element.classList.add('validation-failure');
+            element.classList.remove('validation-success');
+        }
+    }
 }
 
 // Preview profile image
