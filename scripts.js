@@ -251,63 +251,73 @@ async function signup(email, password, fullName, phoneNumber, profilePicFile) {
             return;
         }
         
-        // Sign up with email and password
+        // Sign up with email and password - THIS CREATES THE AUTH.USERS ENTRY
         const { data: authData, error: authError } = await supabase.auth.signUp({
             email: email,
             password: password,
-            options: {
-                data: {
-                    full_name: fullName,
-                    phone_number: phoneNumber
-                }
-            }
+            // Don't add metadata options here, as it might interfere with the default flow
         });
         
-        if (authError) throw authError;
+        if (authError) {
+            console.error("Auth error during signup:", authError);
+            throw authError;
+        }
         
-        if (!authData.user) {
-            throw new Error("User creation failed. Please try again later.");
+        if (!authData || !authData.user) {
+            throw new Error("User creation failed - no user object returned.");
         }
         
         // Upload profile picture if provided
         let avatarUrl = null;
         if (profilePicFile) {
+            // Create a safe filename from user ID and file extension
             const fileExt = profilePicFile.name.split('.').pop();
             const fileName = `${authData.user.id}.${fileExt}`;
             
-            const { data: uploadData, error: uploadError } = await supabase.storage
-                .from('avatars')
-                .upload(fileName, profilePicFile);
-                
-            if (uploadError) {
-                console.error('Error uploading profile picture:', uploadError);
-                // Continue with signup even if image upload fails
-            } else {
-                avatarUrl = `${supabase.supabaseUrl}/storage/v1/object/public/avatars/${fileName}`;
+            try {
+                const { error: uploadError } = await supabase.storage
+                    .from('avatars')
+                    .upload(fileName, profilePicFile);
+                    
+                if (uploadError) {
+                    console.error('Error uploading profile picture:', uploadError);
+                } else {
+                    // Use the correct URL format for the uploaded file
+                    const { data } = supabase.storage
+                        .from('avatars')
+                        .getPublicUrl(fileName);
+                    
+                    avatarUrl = data.publicUrl;
+                }
+            } catch (uploadError) {
+                console.error('Exception during profile picture upload:', uploadError);
+                // Continue even if image upload fails
             }
         }
         
-        // Check if profiles table exists and has necessary permissions
+        // Wait for a brief moment to ensure auth record is fully created
+        // This helps prevent foreign key constraint violations
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Create profile record - matching the exact schema you provided
         try {
-            // Create profile record in a separate try-catch block
-            const { data: profileData, error: profileError } = await supabase
+            const { error: profileError } = await supabase
                 .from('profiles')
-                .upsert([
-                    {
-                        id: authData.user.id,
-                        full_name: fullName,
-                        phone_number: phoneNumber,
-                        avatar_url: avatarUrl,
-                        updated_at: new Date()
-                    }
-                ], { onConflict: 'id' });
+                .insert({
+                    id: authData.user.id,
+                    full_name: fullName,
+                    phone_number: phoneNumber,
+                    avatar_url: avatarUrl,
+                    is_admin: false,  // Default value as per your schema
+                    created_at: new Date().toISOString() // ISO format timestamp
+                });
                 
             if (profileError) {
                 console.error('Profile creation error:', profileError);
-                // Continue with signup even if profile creation fails
+                // Even if profile creation fails, we've already created the user
             }
         } catch (profileCreationError) {
-            console.error('Profile creation exception:', profileCreationError);
+            console.error('Exception during profile creation:', profileCreationError);
             // Continue with signup even if profile creation fails
         }
         
@@ -315,7 +325,7 @@ async function signup(email, password, fullName, phoneNumber, profilePicFile) {
         window.location.href = 'login.html';
     } catch (error) {
         console.error('Signup error details:', error);
-        alert('Error signing up: ' + (error.message || 'Database error saving new user'));
+        alert('Error signing up: ' + (error.message || 'Unknown error'));
     }
 }
 // Logout function
