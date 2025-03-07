@@ -1,66 +1,92 @@
-// Supabase configuration
-const SUPABASE_URL = 'https://hrlyspzvewgxmtpcwjvw.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhybHlzcHp2ZXdneG10cGN3anZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA5OTYxNjcsImV4cCI6MjA1NjU3MjE2N30.TKDwRohOzECZ_gmucp6nAauJcDp0YXtiR4oC9weuLt4';
+// Supabase configuration and initialization
 let supabase;
 
 // Wait for the document to be fully loaded to ensure Supabase library is available
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize Supabase client
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    
-    const currentPage = window.location.pathname.split('/').pop();
-    
-    // Common check for all pages
-    checkUserLoggedIn();
-    
-    // Update dynamic time display
-    updateDateTime();
-    
-    // Page-specific initializations
-    if (currentPage === 'schools.html') {
-        loadSchools();
-    }
-    
-    // Setup login form
-    const loginForm = document.getElementById('login-form');
-    if (loginForm) {
-        loginForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            login(email, password);
-        });
-    }
-    
-    // Setup signup form
-    const signupForm = document.getElementById('signup-form');
-    if (signupForm) {
-        signupForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const fullName = document.getElementById('full-name').value;
-            const phoneNumber = document.getElementById('phone').value;
-            const profilePic = document.getElementById('profile-pic').files[0];
-            signup(email, password, fullName, phoneNumber, profilePic);
-        });
+    try {
+        // Initialize Supabase client with your actual credentials
+        // Replace these with your actual Supabase URL and anon key
+        const SUPABASE_URL = 'https://hrlyspzvewgxmtpcwjvw.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhybHlzcHp2ZXdneG10cGN3anZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA5OTYxNjcsImV4cCI6MjA1NjU3MjE2N30.TKDwRohOzECZ_gmucp6nAauJcDp0YXtiR4oC9weuLt4';
         
-        // Setup profile image preview
-        const profilePicInput = document.getElementById('profile-pic');
-        if (profilePicInput) {
-            profilePicInput.addEventListener('change', function() {
-                previewProfileImage(this);
+        // Validate Supabase URL format
+        if (!SUPABASE_URL.startsWith('https://') || SUPABASE_URL.includes('YOUR_SUPABASE')) {
+            console.error("Invalid Supabase URL. Please set your actual Supabase URL.");
+            document.getElementById('auth-section').style.display = 'flex';
+            document.getElementById('user-section').style.display = 'none';
+            return;
+        }
+        
+        // Validate Supabase key format
+        if (SUPABASE_ANON_KEY === 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhybHlzcHp2ZXdneG10cGN3anZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA5OTYxNjcsImV4cCI6MjA1NjU3MjE2N30.TKDwRohOzECZ_gmucp6nAauJcDp0YXtiR4oC9weuLt4' || SUPABASE_ANON_KEY.length < 20) {
+            console.error("Invalid Supabase anon key. Please set your actual Supabase anon key.");
+            document.getElementById('auth-section').style.display = 'flex';
+            document.getElementById('user-section').style.display = 'none';
+            return;
+        }
+        
+        // Create Supabase client
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        console.log("Supabase client initialized successfully");
+        
+        const currentPage = window.location.pathname.split('/').pop();
+        
+        // Common check for all pages
+        checkUserLoggedIn();
+        
+        // Update dynamic time display
+        updateDateTime();
+        
+        // Page-specific initializations
+        if (currentPage === 'schools.html') {
+            loadSchools();
+        }
+        
+        // Setup login form
+        const loginForm = document.getElementById('login-form');
+        if (loginForm) {
+            loginForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                login(email, password);
             });
         }
-    }
-    
-    // Setup logout button
-    const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            logout();
-        });
+        
+        // Setup signup form
+        const signupForm = document.getElementById('signup-form');
+        if (signupForm) {
+            signupForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                const fullName = document.getElementById('full-name').value;
+                const phoneNumber = document.getElementById('phone').value;
+                const profilePic = document.getElementById('profile-pic').files[0];
+                signup(email, password, fullName, phoneNumber, profilePic);
+            });
+            
+            // Setup profile image preview
+            const profilePicInput = document.getElementById('profile-pic');
+            if (profilePicInput) {
+                profilePicInput.addEventListener('change', function() {
+                    previewProfileImage(this);
+                });
+            }
+        }
+        
+        // Setup logout button
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                logout();
+            });
+        }
+    } catch (error) {
+        console.error("Error initializing Supabase client:", error);
+        document.getElementById('auth-section').style.display = 'flex';
+        document.getElementById('user-section').style.display = 'none';
     }
 });
 
@@ -68,6 +94,8 @@ document.addEventListener('DOMContentLoaded', () => {
 async function checkUserLoggedIn() {
     if (!supabase) {
         console.error("Supabase client not initialized");
+        document.getElementById('auth-section').style.display = 'flex';
+        document.getElementById('user-section').style.display = 'none';
         return;
     }
     
@@ -115,6 +143,8 @@ async function checkUserLoggedIn() {
         }
     } catch (error) {
         console.error("Error checking authentication status:", error);
+        document.getElementById('auth-section').style.display = 'flex';
+        document.getElementById('user-section').style.display = 'none';
     }
 }
 
@@ -149,7 +179,7 @@ async function signup(email, password, fullName, phoneNumber, profilePicFile) {
     try {
         // Validate password
         if (!validatePassword(password)) {
-            alert('Password must contain alphanumeric and special characters');
+            alert('Password must contain at least 8 characters, including uppercase and lowercase letters, numbers, and special characters.');
             return;
         }
         
@@ -173,7 +203,7 @@ async function signup(email, password, fullName, phoneNumber, profilePicFile) {
                 
             if (uploadError) throw uploadError;
             
-            avatarUrl = `${SUPABASE_URL}/storage/v1/object/public/avatars/${fileName}`;
+            avatarUrl = `${supabase.supabaseUrl}/storage/v1/object/public/avatars/${fileName}`;
         }
         
         // Create profile record
@@ -215,8 +245,8 @@ async function logout() {
 
 // Password validation
 function validatePassword(password) {
-    // At least 8 characters, alphanumeric and special characters
-    const regex = /^(?=.*[a-zA-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    // At least 8 characters, including uppercase and lowercase letters, numbers, and special characters
+    const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
     return regex.test(password);
 }
 
