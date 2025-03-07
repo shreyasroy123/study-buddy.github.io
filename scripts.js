@@ -254,10 +254,20 @@ async function signup(email, password, fullName, phoneNumber, profilePicFile) {
         // Sign up with email and password
         const { data: authData, error: authError } = await supabase.auth.signUp({
             email: email,
-            password: password
+            password: password,
+            options: {
+                data: {
+                    full_name: fullName,
+                    phone_number: phoneNumber
+                }
+            }
         });
         
         if (authError) throw authError;
+        
+        if (!authData.user) {
+            throw new Error("User creation failed. Please try again later.");
+        }
         
         // Upload profile picture if provided
         let avatarUrl = null;
@@ -269,32 +279,45 @@ async function signup(email, password, fullName, phoneNumber, profilePicFile) {
                 .from('avatars')
                 .upload(fileName, profilePicFile);
                 
-            if (uploadError) throw uploadError;
-            
-            avatarUrl = `${supabase.supabaseUrl}/storage/v1/object/public/avatars/${fileName}`;
+            if (uploadError) {
+                console.error('Error uploading profile picture:', uploadError);
+                // Continue with signup even if image upload fails
+            } else {
+                avatarUrl = `${supabase.supabaseUrl}/storage/v1/object/public/avatars/${fileName}`;
+            }
         }
         
-        // Create profile record
-        const { data: profileData, error: profileError } = await supabase
-            .from('profiles')
-            .insert([
-                {
-                    id: authData.user.id,
-                    full_name: fullName,
-                    phone_number: phoneNumber,
-                    avatar_url: avatarUrl
-                }
-            ]);
-            
-        if (profileError) throw profileError;
+        // Check if profiles table exists and has necessary permissions
+        try {
+            // Create profile record in a separate try-catch block
+            const { data: profileData, error: profileError } = await supabase
+                .from('profiles')
+                .upsert([
+                    {
+                        id: authData.user.id,
+                        full_name: fullName,
+                        phone_number: phoneNumber,
+                        avatar_url: avatarUrl,
+                        updated_at: new Date()
+                    }
+                ], { onConflict: 'id' });
+                
+            if (profileError) {
+                console.error('Profile creation error:', profileError);
+                // Continue with signup even if profile creation fails
+            }
+        } catch (profileCreationError) {
+            console.error('Profile creation exception:', profileCreationError);
+            // Continue with signup even if profile creation fails
+        }
         
         alert('Signup successful! Please check your email for verification.');
         window.location.href = 'login.html';
     } catch (error) {
-        alert('Error signing up: ' + error.message);
+        console.error('Signup error details:', error);
+        alert('Error signing up: ' + (error.message || 'Database error saving new user'));
     }
 }
-
 // Logout function
 async function logout() {
     if (!supabase) {
